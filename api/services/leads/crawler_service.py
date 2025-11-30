@@ -10,6 +10,7 @@ import logging
 import os
 import re
 import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -157,9 +158,9 @@ class DouyinCrawlerService:
             output_path = Path(self.OUTPUT_DIR)
             output_path.mkdir(parents=True, exist_ok=True)
 
-            # Build the command
+            # Build the command using the same Python as the current process
             cmd = [
-                "python",
+                sys.executable,
                 str(crawler_path / "main.py"),
                 "--platform",
                 "douyin",
@@ -291,7 +292,7 @@ class DouyinCrawlerService:
         for keyword in keywords:
             try:
                 cmd = [
-                    "python",
+                    sys.executable,
                     str(crawler_path / "main.py"),
                     "--platform",
                     "douyin",
