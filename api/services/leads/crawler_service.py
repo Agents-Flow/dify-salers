@@ -120,6 +120,53 @@ class DouyinCrawlerService:
 
         return None
 
+    def _update_dy_config(self, video_urls: list[str]) -> str | None:
+        """
+        Temporarily update dy_config.py with the video URLs to crawl.
+
+        Args:
+            video_urls: List of video URLs/IDs to crawl
+
+        Returns:
+            Original config content for restoration, or None if failed
+        """
+        config_path = Path(self.MEDIA_CRAWLER_PATH) / "config" / "dy_config.py"
+        if not config_path.exists():
+            return None
+
+        try:
+            # Read original content
+            original_content = config_path.read_text(encoding="utf-8")
+
+            # Build the new DY_SPECIFIED_ID_LIST
+            url_list_str = ",\n    ".join(f'"{url}"' for url in video_urls)
+            new_list = f"DY_SPECIFIED_ID_LIST = [\n    {url_list_str},\n]"
+
+            # Replace the DY_SPECIFIED_ID_LIST in the config
+            import re
+
+            pattern = r"DY_SPECIFIED_ID_LIST\s*=\s*\[[\s\S]*?\]"
+            new_content = re.sub(pattern, new_list, original_content)
+
+            # Write the updated config
+            config_path.write_text(new_content, encoding="utf-8")
+            logger.info("Updated dy_config.py with %s video URLs", len(video_urls))
+
+            return original_content
+
+        except OSError:
+            logger.exception("Failed to update dy_config.py")
+            return None
+
+    def _restore_dy_config(self, original_content: str) -> None:
+        """Restore dy_config.py to its original content."""
+        config_path = Path(self.MEDIA_CRAWLER_PATH) / "config" / "dy_config.py"
+        try:
+            config_path.write_text(original_content, encoding="utf-8")
+            logger.info("Restored dy_config.py to original content")
+        except OSError:
+            logger.exception("Failed to restore dy_config.py")
+
     def crawl_video_comments(
         self,
         video_url: str,
@@ -153,23 +200,30 @@ class DouyinCrawlerService:
             logger.warning("MediaCrawler not installed, returning empty results")
             return []
 
+        original_config = None
         try:
             # Ensure output directory exists
             output_path = Path(self.OUTPUT_DIR)
             output_path.mkdir(parents=True, exist_ok=True)
 
+            # Update dy_config.py with the video URL
+            original_config = self._update_dy_config([video_url])
+            if not original_config:
+                logger.warning("Could not update dy_config.py, crawl may not work")
+
             # Build the command using the same Python as the current process
+            # MediaCrawler uses --type detail and reads video IDs from DY_SPECIFIED_ID_LIST
             cmd = [
                 sys.executable,
                 str(crawler_path / "main.py"),
                 "--platform",
-                "douyin",
+                "dy",
                 "--type",
                 "detail",
-                "--id",
-                video_id,
-                "--save-data-option",
+                "--save_data_option",
                 "json",
+                "--get_comment",
+                "true",
             ]
 
             logger.info("Executing crawler command: %s", " ".join(cmd))
@@ -199,6 +253,10 @@ class DouyinCrawlerService:
             raise CrawlerNotConfiguredError(
                 "Python or MediaCrawler not found. Please ensure MediaCrawler is properly installed."
             )
+        finally:
+            # Always restore the original config
+            if original_config:
+                self._restore_dy_config(original_config)
 
     def _parse_crawler_output(
         self,
@@ -289,41 +347,46 @@ class DouyinCrawlerService:
 
         all_comments: list[CrawledComment] = []
 
-        for keyword in keywords:
-            try:
-                cmd = [
-                    sys.executable,
-                    str(crawler_path / "main.py"),
-                    "--platform",
-                    "douyin",
-                    "--type",
-                    "search",
-                    "--keywords",
-                    keyword,
-                    "--save-data-option",
-                    "json",
-                ]
+        # Join keywords with comma for MediaCrawler
+        keywords_str = ",".join(keywords)
 
-                if city:
-                    cmd.extend(["--city", city])
+        try:
+            cmd = [
+                sys.executable,
+                str(crawler_path / "main.py"),
+                "--platform",
+                "dy",
+                "--type",
+                "search",
+                "--keywords",
+                keywords_str,
+                "--save_data_option",
+                "json",
+                "--get_comment",
+                "true",
+            ]
 
-                result = subprocess.run(
-                    cmd,
-                    cwd=str(crawler_path),
-                    capture_output=True,
-                    text=True,
-                    timeout=600,
-                    env={**os.environ, "HEADLESS": "true"},
-                )
+            logger.info("Executing search crawler command: %s", " ".join(cmd))
 
-                if result.returncode == 0:
-                    # Parse search results
+            result = subprocess.run(
+                cmd,
+                cwd=str(crawler_path),
+                capture_output=True,
+                text=True,
+                timeout=600,
+                env={**os.environ, "HEADLESS": "true"},
+            )
+
+            if result.returncode == 0:
+                # Parse search results
+                for keyword in keywords:
                     video_comments = self._parse_search_results(keyword, max_videos, max_comments_per_video)
                     all_comments.extend(video_comments)
+            else:
+                logger.warning("Search crawler failed: %s", result.stderr[:500] if result.stderr else "No error output")
 
-            except (subprocess.TimeoutExpired, OSError):
-                logger.exception("Keyword search failed for '%s'", keyword)
-                continue
+        except (subprocess.TimeoutExpired, OSError):
+            logger.exception("Keyword search failed for '%s'", keywords_str)
 
         return all_comments
 
