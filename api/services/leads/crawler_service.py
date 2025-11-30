@@ -1,6 +1,13 @@
 """
 Crawler service for lead acquisition.
-Wraps MediaCrawler for Douyin comment crawling.
+Wraps MediaCrawler for multi-platform comment crawling.
+
+Supported platforms:
+- Douyin (抖音)
+- Xiaohongshu (小红书)
+- Kuaishou (快手)
+- Bilibili (B站)
+- Weibo (微博)
 
 MediaCrawler: https://github.com/NanmiCoder/MediaCrawler
 """
@@ -12,10 +19,60 @@ import re
 import subprocess
 import sys
 from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+
+class CrawlerPlatform(StrEnum):
+    """Supported crawler platforms matching MediaCrawler platform codes."""
+
+    DOUYIN = "dy"
+    XIAOHONGSHU = "xhs"
+    KUAISHOU = "ks"
+    BILIBILI = "bili"
+    WEIBO = "wb"
+
+
+# Platform configuration mappings
+PLATFORM_CONFIG_MAP = {
+    CrawlerPlatform.DOUYIN: {
+        "config_file": "dy_config.py",
+        "list_var": "DY_SPECIFIED_ID_LIST",
+        "data_dir": "douyin",
+    },
+    CrawlerPlatform.XIAOHONGSHU: {
+        "config_file": "xhs_config.py",
+        "list_var": "XHS_SPECIFIED_NOTE_URL_LIST",
+        "data_dir": "xhs",
+    },
+    CrawlerPlatform.KUAISHOU: {
+        "config_file": "ks_config.py",
+        "list_var": "KS_SPECIFIED_ID_LIST",
+        "data_dir": "kuaishou",
+    },
+    CrawlerPlatform.BILIBILI: {
+        "config_file": "bilibili_config.py",
+        "list_var": "BILI_SPECIFIED_ID_LIST",
+        "data_dir": "bilibili",
+    },
+    CrawlerPlatform.WEIBO: {
+        "config_file": "weibo_config.py",
+        "list_var": "WEIBO_SPECIFIED_ID_LIST",
+        "data_dir": "weibo",
+    },
+}
+
+# Map user-facing platform names to crawler platform codes
+PLATFORM_NAME_MAP = {
+    "douyin": CrawlerPlatform.DOUYIN,
+    "xiaohongshu": CrawlerPlatform.XIAOHONGSHU,
+    "kuaishou": CrawlerPlatform.KUAISHOU,
+    "bilibili": CrawlerPlatform.BILIBILI,
+    "weibo": CrawlerPlatform.WEIBO,
+}
 
 
 @dataclass
@@ -43,16 +100,21 @@ class CrawlerExecutionError(CrawlerServiceError):
     """Error during crawler execution."""
 
 
-class DouyinCrawlerService:
+class MultiPlatformCrawlerService:
     """
-    Service for crawling Douyin (TikTok China) comments.
+    Service for crawling comments from multiple social media platforms.
 
-    This service wraps MediaCrawler to provide a clean interface
-    for crawling video comments.
+    Supported platforms:
+    - Douyin (抖音): dy
+    - Xiaohongshu (小红书): xhs
+    - Kuaishou (快手): ks
+    - Bilibili (B站): bili
+    - Weibo (微博): wb
 
     Usage:
-        crawler = DouyinCrawlerService()
+        crawler = MultiPlatformCrawlerService()
         comments = crawler.crawl_video_comments(
+            platform="douyin",
             video_url="https://www.douyin.com/video/xxx",
             max_comments=100
         )
@@ -75,6 +137,10 @@ class DouyinCrawlerService:
         """Initialize the crawler service."""
         self._validate_installation()
 
+    def _get_crawler_platform(self, platform: str) -> CrawlerPlatform:
+        """Convert user-facing platform name to crawler platform code."""
+        return PLATFORM_NAME_MAP.get(platform, CrawlerPlatform.DOUYIN)
+
     def _validate_installation(self) -> None:
         """Check if MediaCrawler is properly installed."""
         crawler_path = Path(self.MEDIA_CRAWLER_PATH)
@@ -85,99 +151,156 @@ class DouyinCrawlerService:
             )
 
     @staticmethod
-    def extract_video_id(url: str) -> str | None:
+    def extract_video_id(url: str, platform: str = "douyin") -> str | None:
         """
-        Extract video ID from Douyin URL.
-
-        Supports formats:
-        - https://www.douyin.com/video/7123456789012345678
-        - https://v.douyin.com/abc123/
-        - https://www.douyin.com/jingxuan/search/xxx?modal_id=7123456789
+        Extract video ID from URL for various platforms.
 
         Args:
-            url: Douyin video URL
+            url: Video URL
+            platform: Target platform
 
         Returns:
             Video ID or None if not found
         """
-        # Standard video URL pattern
-        video_pattern = r"douyin\.com/video/(\d+)"
-        match = re.search(video_pattern, url)
-        if match:
-            return match.group(1)
+        if platform == "douyin":
+            # Standard video URL pattern
+            video_pattern = r"douyin\.com/video/(\d+)"
+            match = re.search(video_pattern, url)
+            if match:
+                return match.group(1)
 
-        # Modal ID pattern (from search pages)
-        modal_pattern = r"modal_id=(\d+)"
-        match = re.search(modal_pattern, url)
-        if match:
-            return match.group(1)
+            # Modal ID pattern (from search pages)
+            modal_pattern = r"modal_id=(\d+)"
+            match = re.search(modal_pattern, url)
+            if match:
+                return match.group(1)
 
-        # Short URL - would need to resolve redirect
-        short_pattern = r"v\.douyin\.com/([a-zA-Z0-9]+)"
-        match = re.search(short_pattern, url)
-        if match:
-            return match.group(1)
+            # Short URL
+            short_pattern = r"v\.douyin\.com/([a-zA-Z0-9]+)"
+            match = re.search(short_pattern, url)
+            if match:
+                return match.group(1)
+
+        elif platform == "xiaohongshu":
+            # Xiaohongshu note URL
+            xhs_pattern = r"xiaohongshu\.com/(?:explore|discovery/item)/([a-zA-Z0-9]+)"
+            match = re.search(xhs_pattern, url)
+            if match:
+                return match.group(1)
+            # Direct note ID
+            if re.match(r"^[a-zA-Z0-9]{24}$", url):
+                return url
+
+        elif platform == "kuaishou":
+            # Kuaishou video URL
+            ks_pattern = r"kuaishou\.com/short-video/([a-zA-Z0-9]+)"
+            match = re.search(ks_pattern, url)
+            if match:
+                return match.group(1)
+            # Direct video ID
+            if re.match(r"^[a-zA-Z0-9]+$", url):
+                return url
+
+        elif platform == "bilibili":
+            # Bilibili video URL (BV format)
+            bili_pattern = r"bilibili\.com/video/(BV[a-zA-Z0-9]+)"
+            match = re.search(bili_pattern, url)
+            if match:
+                return match.group(1)
+            # Direct BV ID
+            if url.startswith("BV"):
+                return url
+
+        elif platform == "weibo":
+            # Weibo post ID
+            weibo_pattern = r"weibo\.com/\d+/([a-zA-Z0-9]+)"
+            match = re.search(weibo_pattern, url)
+            if match:
+                return match.group(1)
+            # Direct ID
+            if re.match(r"^\d+$", url):
+                return url
+
+        # Fallback: return URL as-is if it looks like an ID
+        if re.match(r"^[a-zA-Z0-9_-]+$", url):
+            return url
 
         return None
 
-    def _update_dy_config(self, video_urls: list[str]) -> str | None:
+    def _update_platform_config(self, platform: CrawlerPlatform, video_urls: list[str]) -> str | None:
         """
-        Temporarily update dy_config.py with the video URLs to crawl.
+        Temporarily update platform config with the video URLs to crawl.
 
         Args:
+            platform: Target platform
             video_urls: List of video URLs/IDs to crawl
 
         Returns:
             Original config content for restoration, or None if failed
         """
-        config_path = Path(self.MEDIA_CRAWLER_PATH) / "config" / "dy_config.py"
+        platform_config = PLATFORM_CONFIG_MAP.get(platform)
+        if not platform_config:
+            logger.warning("Unknown platform: %s", platform)
+            return None
+
+        config_file = platform_config["config_file"]
+        list_var = platform_config["list_var"]
+        config_path = Path(self.MEDIA_CRAWLER_PATH) / "config" / config_file
+
         if not config_path.exists():
+            logger.warning("Config file not found: %s", config_path)
             return None
 
         try:
             # Read original content
             original_content = config_path.read_text(encoding="utf-8")
 
-            # Build the new DY_SPECIFIED_ID_LIST
+            # Build the new ID list
             url_list_str = ",\n    ".join(f'"{url}"' for url in video_urls)
-            new_list = f"DY_SPECIFIED_ID_LIST = [\n    {url_list_str},\n]"
+            new_list = f"{list_var} = [\n    {url_list_str},\n]"
 
-            # Replace the DY_SPECIFIED_ID_LIST in the config
-            import re
-
-            pattern = r"DY_SPECIFIED_ID_LIST\s*=\s*\[[\s\S]*?\]"
+            # Replace the list variable in the config
+            pattern = rf"{list_var}\s*=\s*\[[\s\S]*?\]"
             new_content = re.sub(pattern, new_list, original_content)
 
             # Write the updated config
             config_path.write_text(new_content, encoding="utf-8")
-            logger.info("Updated dy_config.py with %s video URLs", len(video_urls))
+            logger.info("Updated %s with %s URLs for platform %s", config_file, len(video_urls), platform)
 
             return original_content
 
         except OSError:
-            logger.exception("Failed to update dy_config.py")
+            logger.exception("Failed to update %s", config_file)
             return None
 
-    def _restore_dy_config(self, original_content: str) -> None:
-        """Restore dy_config.py to its original content."""
-        config_path = Path(self.MEDIA_CRAWLER_PATH) / "config" / "dy_config.py"
+    def _restore_platform_config(self, platform: CrawlerPlatform, original_content: str) -> None:
+        """Restore platform config to its original content."""
+        platform_config = PLATFORM_CONFIG_MAP.get(platform)
+        if not platform_config:
+            return
+
+        config_file = platform_config["config_file"]
+        config_path = Path(self.MEDIA_CRAWLER_PATH) / "config" / config_file
+
         try:
             config_path.write_text(original_content, encoding="utf-8")
-            logger.info("Restored dy_config.py to original content")
+            logger.info("Restored %s to original content", config_file)
         except OSError:
-            logger.exception("Failed to restore dy_config.py")
+            logger.exception("Failed to restore %s", config_file)
 
     def crawl_video_comments(
         self,
         video_url: str,
+        platform: str = "douyin",
         max_comments: int = 500,
         timeout: int = 300,
     ) -> list[CrawledComment]:
         """
-        Crawl comments from a Douyin video.
+        Crawl comments from a video on any supported platform.
 
         Args:
-            video_url: The Douyin video URL
+            video_url: The video URL
+            platform: Target platform (douyin, xiaohongshu, kuaishou, bilibili, weibo)
             max_comments: Maximum number of comments to crawl
             timeout: Timeout in seconds for the crawl operation
 
@@ -188,11 +311,12 @@ class DouyinCrawlerService:
             CrawlerNotConfiguredError: If MediaCrawler is not installed
             CrawlerExecutionError: If crawling fails
         """
-        video_id = self.extract_video_id(video_url)
+        crawler_platform = self._get_crawler_platform(platform)
+        video_id = self.extract_video_id(video_url, platform)
         if not video_id:
             raise CrawlerExecutionError(f"Could not extract video ID from URL: {video_url}")
 
-        logger.info("Starting crawl for video: %s (max: %s comments)", video_id, max_comments)
+        logger.info("Starting crawl for %s video: %s (max: %s comments)", platform, video_id, max_comments)
 
         # Check if MediaCrawler is available
         crawler_path = Path(self.MEDIA_CRAWLER_PATH)
@@ -206,18 +330,17 @@ class DouyinCrawlerService:
             output_path = Path(self.OUTPUT_DIR)
             output_path.mkdir(parents=True, exist_ok=True)
 
-            # Update dy_config.py with the video URL
-            original_config = self._update_dy_config([video_url])
+            # Update platform config with the video URL
+            original_config = self._update_platform_config(crawler_platform, [video_url])
             if not original_config:
-                logger.warning("Could not update dy_config.py, crawl may not work")
+                logger.warning("Could not update platform config, crawl may not work")
 
             # Build the command using the same Python as the current process
-            # MediaCrawler uses --type detail and reads video IDs from DY_SPECIFIED_ID_LIST
             cmd = [
                 sys.executable,
                 str(crawler_path / "main.py"),
                 "--platform",
-                "dy",
+                crawler_platform.value,
                 "--type",
                 "detail",
                 "--save_data_option",
@@ -243,8 +366,8 @@ class DouyinCrawlerService:
                 raise CrawlerExecutionError(f"Crawler execution failed: {result.stderr}")
 
             # Parse results
-            comments = self._parse_crawler_output(video_id, video_url, max_comments)
-            logger.info("Crawled %s comments for video %s", len(comments), video_id)
+            comments = self._parse_crawler_output(crawler_platform, video_id, video_url, max_comments)
+            logger.info("Crawled %s comments for %s video %s", len(comments), platform, video_id)
             return comments
 
         except subprocess.TimeoutExpired:
@@ -256,16 +379,19 @@ class DouyinCrawlerService:
         finally:
             # Always restore the original config
             if original_config:
-                self._restore_dy_config(original_config)
+                self._restore_platform_config(crawler_platform, original_config)
 
     def _parse_crawler_output(
         self,
+        platform: CrawlerPlatform,
         video_id: str,
         video_url: str,
         max_comments: int,
     ) -> list[CrawledComment]:
         """Parse the JSON output from MediaCrawler."""
-        output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / "douyin"
+        platform_config = PLATFORM_CONFIG_MAP.get(platform)
+        data_dir = platform_config["data_dir"] if platform_config else "douyin"
+        output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / data_dir
 
         # Find the latest output file
         json_files = list(output_path.glob("*.json"))
@@ -322,6 +448,7 @@ class DouyinCrawlerService:
     def crawl_search_comments(
         self,
         keywords: list[str],
+        platform: str = "douyin",
         city: str | None = None,
         max_videos: int = 10,
         max_comments_per_video: int = 50,
@@ -331,6 +458,7 @@ class DouyinCrawlerService:
 
         Args:
             keywords: Search keywords
+            platform: Target platform (douyin, xiaohongshu, kuaishou, bilibili, weibo)
             city: Filter by city (optional)
             max_videos: Maximum number of videos to search
             max_comments_per_video: Maximum comments per video
@@ -338,7 +466,8 @@ class DouyinCrawlerService:
         Returns:
             List of CrawledComment objects
         """
-        logger.info("Starting keyword search crawl: keywords=%s, city=%s", keywords, city)
+        crawler_platform = self._get_crawler_platform(platform)
+        logger.info("Starting keyword search crawl on %s: keywords=%s, city=%s", platform, keywords, city)
 
         crawler_path = Path(self.MEDIA_CRAWLER_PATH)
         if not crawler_path.exists():
@@ -355,7 +484,7 @@ class DouyinCrawlerService:
                 sys.executable,
                 str(crawler_path / "main.py"),
                 "--platform",
-                "dy",
+                crawler_platform.value,
                 "--type",
                 "search",
                 "--keywords",
@@ -380,7 +509,9 @@ class DouyinCrawlerService:
             if result.returncode == 0:
                 # Parse search results
                 for keyword in keywords:
-                    video_comments = self._parse_search_results(keyword, max_videos, max_comments_per_video)
+                    video_comments = self._parse_search_results(
+                        crawler_platform, keyword, max_videos, max_comments_per_video
+                    )
                     all_comments.extend(video_comments)
             else:
                 logger.warning("Search crawler failed: %s", result.stderr[:500] if result.stderr else "No error output")
@@ -392,13 +523,15 @@ class DouyinCrawlerService:
 
     def _parse_search_results(
         self,
+        platform: CrawlerPlatform,
         keyword: str,
         max_videos: int,
         max_comments_per_video: int,
     ) -> list[CrawledComment]:
         """Parse search results from MediaCrawler."""
-        # Search results are stored differently
-        output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / "douyin"
+        platform_config = PLATFORM_CONFIG_MAP.get(platform)
+        data_dir = platform_config["data_dir"] if platform_config else "douyin"
+        output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / data_dir
         comments: list[CrawledComment] = []
 
         # Find and parse search result files
@@ -417,6 +550,10 @@ class DouyinCrawlerService:
         return comments
 
 
-def create_crawler_service() -> DouyinCrawlerService:
+def create_crawler_service() -> MultiPlatformCrawlerService:
     """Factory function to create a crawler service instance."""
-    return DouyinCrawlerService()
+    return MultiPlatformCrawlerService()
+
+
+# Backward compatibility alias
+DouyinCrawlerService = MultiPlatformCrawlerService

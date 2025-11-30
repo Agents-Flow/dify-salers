@@ -24,6 +24,7 @@ import {
   useLeadList,
   useLeadStats,
   useLeadTaskList,
+  usePlatforms,
   useRestartLeadTask,
   useRunLeadTask,
   useTaskLeads,
@@ -87,10 +88,20 @@ const TaskForm: FC<TaskFormProps> = (props) => {
   const { onCancel, isLoading, mode } = props
   const initialData = mode === 'edit' ? props.initialData : undefined
   const { t } = useTranslation()
+  const { data: platformsData } = usePlatforms()
   const [name, setName] = useState(initialData?.name || '')
+  const [platform, setPlatform] = useState(initialData?.platform || 'douyin')
   const [videoUrl, setVideoUrl] = useState(initialData?.config?.video_urls?.[0] || '')
   const [keywords, setKeywords] = useState(initialData?.config?.keywords?.join(', ') || '')
   const [city, setCity] = useState(initialData?.config?.city || '')
+
+  const platforms = platformsData?.data || [
+    { value: 'douyin', label: '抖音 (Douyin)' },
+    { value: 'xiaohongshu', label: '小红书 (Xiaohongshu)' },
+    { value: 'kuaishou', label: '快手 (Kuaishou)' },
+    { value: 'bilibili', label: 'B站 (Bilibili)' },
+    { value: 'weibo', label: '微博 (Weibo)' },
+  ]
 
   const handleSubmit = () => {
     if (!name.trim()) {
@@ -104,6 +115,7 @@ const TaskForm: FC<TaskFormProps> = (props) => {
     if (mode === 'create') {
       (props as TaskFormPropsCreate).onSubmit({
         name: name.trim(),
+        platform,
         task_type: 'comment_crawl',
         config: {
           video_urls: videoUrls,
@@ -116,6 +128,7 @@ const TaskForm: FC<TaskFormProps> = (props) => {
     else {
       (props as TaskFormPropsEdit).onSubmit({
         name: name.trim(),
+        platform,
         config: {
           video_urls: videoUrls,
           keywords: keywordList,
@@ -137,6 +150,22 @@ const TaskForm: FC<TaskFormProps> = (props) => {
           onChange={e => setName(e.target.value)}
           placeholder={t('leads.createTask.namePlaceholder')}
         />
+      </div>
+      <div>
+        <label className='mb-1 block text-sm font-medium text-text-secondary'>
+          {t('leads.createTask.platform')}
+        </label>
+        <select
+          value={platform}
+          onChange={e => setPlatform(e.target.value)}
+          className='w-full rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-3 py-2 text-sm text-text-secondary focus:border-components-input-border-active focus:outline-none'
+        >
+          {platforms.map(p => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </select>
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>

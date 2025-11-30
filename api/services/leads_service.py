@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from extensions.ext_database import db
-from models.leads import Lead, LeadStatus, LeadTask, LeadTaskStatus
+from models.leads import Lead, LeadStatus, LeadTask, LeadTaskStatus, SupportedPlatform
 
 logger = logging.getLogger(__name__)
 
@@ -70,11 +70,23 @@ class LeadTaskService:
         return LeadTaskService._task_to_dict(task)
 
     @staticmethod
+    def get_supported_platforms() -> list[dict[str, str]]:
+        """Get list of supported platforms for lead crawling."""
+        return [
+            {"value": SupportedPlatform.DOUYIN, "label": "抖音 (Douyin)"},
+            {"value": SupportedPlatform.XIAOHONGSHU, "label": "小红书 (Xiaohongshu)"},
+            {"value": SupportedPlatform.KUAISHOU, "label": "快手 (Kuaishou)"},
+            {"value": SupportedPlatform.BILIBILI, "label": "B站 (Bilibili)"},
+            {"value": SupportedPlatform.WEIBO, "label": "微博 (Weibo)"},
+        ]
+
+    @staticmethod
     def create_task(
         tenant_id: str,
         created_by: str,
         name: str,
         task_type: str = "comment_crawl",
+        platform: str = "douyin",
         config: dict | None = None,
     ) -> dict[str, Any]:
         """
@@ -85,16 +97,23 @@ class LeadTaskService:
             created_by: User ID who created the task
             name: Task name
             task_type: Type of task (default: comment_crawl)
+            platform: Target platform (default: douyin)
             config: Task configuration
 
         Returns:
             Created task as dictionary
         """
+        # Validate platform
+        valid_platforms = [p.value for p in SupportedPlatform]
+        if platform not in valid_platforms:
+            platform = SupportedPlatform.DOUYIN
+
         task = LeadTask(
             tenant_id=tenant_id,
             created_by=created_by,
             name=name,
             task_type=task_type,
+            platform=platform,
             config=config or {},
         )
         db.session.add(task)
@@ -141,15 +160,17 @@ class LeadTaskService:
         tenant_id: str,
         task_id: str,
         name: str | None = None,
+        platform: str | None = None,
         config: dict | None = None,
     ) -> dict[str, Any] | None:
         """
-        Update task name and/or configuration.
+        Update task name, platform and/or configuration.
 
         Args:
             tenant_id: The tenant ID
             task_id: Task ID to update
             name: New task name (optional)
+            platform: New platform (optional)
             config: New task configuration (optional)
 
         Returns:
@@ -166,6 +187,10 @@ class LeadTaskService:
 
         if name is not None:
             task.name = name
+        if platform is not None:
+            valid_platforms = [p.value for p in SupportedPlatform]
+            if platform in valid_platforms:
+                task.platform = platform
         if config is not None:
             task.config = config
 

@@ -34,6 +34,16 @@ class LeadStatus(StrEnum):
     INVALID = "invalid"
 
 
+class SupportedPlatform(StrEnum):
+    """Supported social media platforms for lead crawling."""
+
+    DOUYIN = "douyin"  # 抖音
+    XIAOHONGSHU = "xiaohongshu"  # 小红书
+    KUAISHOU = "kuaishou"  # 快手
+    BILIBILI = "bilibili"  # B站
+    WEIBO = "weibo"  # 微博
+
+
 class LeadTask(TypeBase):
     """
     Lead acquisition task model.
@@ -59,7 +69,6 @@ class LeadTask(TypeBase):
         String(50),
         default="douyin",
         server_default=sa.text("'douyin'"),
-        init=False,
     )
     task_type: Mapped[str] = mapped_column(
         String(50),

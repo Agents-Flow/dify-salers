@@ -65,10 +65,15 @@ def crawl_lead_task(task_id: str):
         keywords = config.get("keywords", [])
         max_comments = config.get("max_comments", 500)
 
-        logger.info("Task config: videos=%s, keywords=%s, max=%s", len(video_urls), keywords, max_comments)
+        # Get platform from task (default to douyin)
+        platform = task.platform or "douyin"
+        logger.info(
+            "Task config: platform=%s, videos=%s, keywords=%s, max=%s",
+            platform, len(video_urls), keywords, max_comments
+        )
 
         # Crawl leads using MediaCrawler service
-        crawled_leads = _crawl_leads(video_urls, keywords, config.get("city"), max_comments)
+        crawled_leads = _crawl_leads(video_urls, keywords, config.get("city"), max_comments, platform)
 
         # Store leads in database
         if crawled_leads:
@@ -116,15 +121,17 @@ def _crawl_leads(
     keywords: list[str],
     city: str | None,
     max_comments: int,
+    platform: str = "douyin",
 ) -> list[dict]:
     """
-    Crawl leads from Douyin using MediaCrawler service.
+    Crawl leads from social media platform using MediaCrawler service.
 
     Args:
         video_urls: List of video URLs to crawl
         keywords: Keywords for search-based crawling
         city: Target city for filtering
         max_comments: Maximum comments to crawl
+        platform: Target platform (douyin, xiaohongshu, kuaishou, bilibili, weibo)
 
     Returns:
         List of lead data dictionaries
@@ -144,10 +151,11 @@ def _crawl_leads(
             try:
                 comments = crawler.crawl_video_comments(
                     video_url=url,
+                    platform=platform,
                     max_comments=comments_per_video,
                 )
                 all_comments.extend(comments)
-                logger.info("Crawled %s comments from %s", len(comments), url)
+                logger.info("Crawled %s comments from %s on %s", len(comments), url, platform)
             except CrawlerServiceError as e:
                 logger.warning("Failed to crawl video %s: %s", url, e)
                 continue
@@ -157,12 +165,13 @@ def _crawl_leads(
         try:
             keyword_comments = crawler.crawl_search_comments(
                 keywords=keywords,
+                platform=platform,
                 city=city,
                 max_videos=10,
                 max_comments_per_video=max_comments // len(keywords) if keywords else 50,
             )
             all_comments.extend(keyword_comments)
-            logger.info("Crawled %s comments from keyword search", len(keyword_comments))
+            logger.info("Crawled %s comments from %s keyword search", len(keyword_comments), platform)
         except CrawlerServiceError as e:
             logger.warning("Keyword search failed: %s", e)
 

@@ -90,8 +90,18 @@ export type LeadTaskListParams = {
   status?: string
 }
 
+export type Platform = {
+  value: string
+  label: string
+}
+
+export type PlatformListResponse = {
+  data: Platform[]
+}
+
 export type CreateLeadTaskData = {
   name: string
+  platform?: string
   task_type?: string
   config?: {
     video_urls?: string[]
@@ -109,6 +119,7 @@ export type UpdateLeadData = {
 
 export type UpdateLeadTaskData = {
   name?: string
+  platform?: string
   config?: {
     video_urls?: string[]
     keywords?: string[]
@@ -154,6 +165,14 @@ export const useUpdateLead = () => {
 }
 
 // ===== Lead Task Hooks =====
+
+export const usePlatforms = () => {
+  return useQuery<PlatformListResponse>({
+    queryKey: [NAME_SPACE, 'platforms'],
+    queryFn: () => get<PlatformListResponse>('/lead-platforms'),
+    staleTime: 1000 * 60 * 60, // Cache for 1 hour
+  })
+}
 
 export const useLeadTaskList = (params: LeadTaskListParams = {}, options?: { refetchInterval?: number | false }) => {
   return useQuery<LeadTaskListResponse>({

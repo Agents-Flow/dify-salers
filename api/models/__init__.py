@@ -39,6 +39,7 @@ from .leads import (
     LeadStatus,
     LeadTask,
     LeadTaskStatus,
+    SupportedPlatform,
 )
 from .model import (
     ApiRequest,
@@ -164,6 +165,7 @@ __all__ = [
     "LeadStatus",
     "LeadTask",
     "LeadTaskStatus",
+    "LeadTaskStatus",
     "LoadBalancingModelConfig",
     "Message",
     "MessageAgentThought",
@@ -182,6 +184,7 @@ __all__ = [
     "RecommendedApp",
     "SavedMessage",
     "Site",
+    "SupportedPlatform",
     "Tag",
     "TagBinding",
     "Tenant",

@@ -32,12 +32,20 @@ lead_task_model = console_ns.model(
     {
         "id": fields.String(description="Task ID"),
         "name": fields.String(description="Task name"),
-        "platform": fields.String(description="Platform (douyin)"),
+        "platform": fields.String(description="Platform (douyin, xiaohongshu, kuaishou, bilibili, weibo)"),
         "task_type": fields.String(description="Task type"),
         "status": fields.String(description="Task status"),
         "config": fields.Nested(lead_task_config_model),
         "total_leads": fields.Integer(description="Total leads collected"),
         "created_at": fields.String(description="Creation timestamp"),
+    },
+)
+
+platform_model = console_ns.model(
+    "Platform",
+    {
+        "value": fields.String(description="Platform value/key"),
+        "label": fields.String(description="Platform display label"),
     },
 )
 
@@ -98,6 +106,7 @@ class LeadTaskListApi(Resource):
             "CreateLeadTaskRequest",
             {
                 "name": fields.String(required=True, description="Task name"),
+                "platform": fields.String(description="Platform (douyin, xiaohongshu, kuaishou, bilibili, weibo)"),
                 "task_type": fields.String(description="Task type (default: comment_crawl)"),
                 "config": fields.Nested(lead_task_config_model, description="Task configuration"),
             },
@@ -119,9 +128,25 @@ class LeadTaskListApi(Resource):
             created_by=account.id,
             name=data["name"],
             task_type=data.get("task_type", "comment_crawl"),
+            platform=data.get("platform", "douyin"),
             config=data.get("config", {}),
         )
         return task, 201
+
+
+@console_ns.route("/lead-platforms")
+class LeadPlatformsApi(Resource):
+    """Supported platforms endpoint."""
+
+    @console_ns.doc("list_lead_platforms")
+    @console_ns.doc(description="Get list of supported platforms for lead crawling")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get list of supported platforms."""
+        platforms = LeadTaskService.get_supported_platforms()
+        return {"data": platforms}, 200
 
 
 @console_ns.route("/lead-tasks/<uuid:task_id>")
@@ -151,6 +176,7 @@ class LeadTaskApi(Resource):
             "UpdateLeadTaskRequest",
             {
                 "name": fields.String(description="Task name"),
+                "platform": fields.String(description="Platform (douyin, xiaohongshu, kuaishou, bilibili, weibo)"),
                 "config": fields.Nested(lead_task_config_model, description="Task configuration"),
             },
         )
@@ -159,7 +185,7 @@ class LeadTaskApi(Resource):
     @login_required
     @account_initialization_required
     def patch(self, task_id):
-        """Update task name and/or configuration."""
+        """Update task name, platform and/or configuration."""
         _, tenant_id = current_account_with_tenant()
         data = request.get_json() or {}
 
@@ -167,6 +193,7 @@ class LeadTaskApi(Resource):
             tenant_id=tenant_id,
             task_id=str(task_id),
             name=data.get("name"),
+            platform=data.get("platform"),
             config=data.get("config"),
         )
 
