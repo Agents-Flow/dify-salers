@@ -82,6 +82,7 @@ class CrawledComment:
     platform_user_id: str
     nickname: str
     comment_content: str
+    platform: str = "douyin"  # Platform identifier
     avatar_url: str | None = None
     region: str | None = None
     source_video_url: str | None = None
@@ -473,8 +474,9 @@ class MultiPlatformCrawlerService:
             return CrawledComment(
                 platform_user_id=str(user_id),
                 nickname=nickname,
-                avatar_url=avatar,
                 comment_content=content,
+                platform=platform,  # Include platform in the comment data
+                avatar_url=avatar,
                 region=region,
                 source_video_url=clean_video_url,
                 source_video_title=item.get("aweme_title", ""),
