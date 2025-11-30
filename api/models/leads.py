@@ -165,6 +165,22 @@ class Lead(TypeBase):
         nullable=True,
         default=None,
     )
+    # Platform-specific IDs for reply functionality
+    platform_comment_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        default=None,
+    )
+    platform_video_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        default=None,
+    )
+    platform_user_sec_uid: Mapped[str | None] = mapped_column(
+        String(512),
+        nullable=True,
+        default=None,
+    )
     nickname: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
@@ -192,6 +208,22 @@ class Lead(TypeBase):
     )
     source_video_title: Mapped[str | None] = mapped_column(
         Text,
+        nullable=True,
+        default=None,
+    )
+    # Reply tracking
+    reply_url: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+        default=None,
+    )
+    replied_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime,
+        nullable=True,
+        default=None,
+    )
+    reply_content: Mapped[str | None] = mapped_column(
+        LongText,
         nullable=True,
         default=None,
     )

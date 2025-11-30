@@ -15,12 +15,18 @@ export type Lead = {
   task_id: string | null
   platform: string
   platform_user_id: string | null
+  platform_comment_id: string | null
+  platform_video_id: string | null
+  platform_user_sec_uid: string | null
   nickname: string | null
   avatar_url: string | null
   region: string | null
   comment_content: string | null
   source_video_url: string | null
   source_video_title: string | null
+  reply_url: string | null
+  replied_at: string | null
+  reply_content: string | null
   intent_score: number
   intent_tags: string[] | null
   intent_reason: string | null

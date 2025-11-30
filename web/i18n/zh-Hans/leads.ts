@@ -27,6 +27,9 @@ const translation = {
     markInvalid: '标记无效',
     videoUrl: '视频链接',
     viewVideo: '查看视频',
+    reply: '回复',
+    goReply: '去回复',
+    replied: '已回复',
   },
   status: {
     new: '新客户',

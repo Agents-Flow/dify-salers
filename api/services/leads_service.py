@@ -425,6 +425,15 @@ class LeadService:
                     existing.source_video_url = data["source_video_url"]
                 if data.get("source_video_title"):
                     existing.source_video_title = data["source_video_title"]
+                # Update platform-specific IDs
+                if data.get("platform_comment_id"):
+                    existing.platform_comment_id = data["platform_comment_id"]
+                if data.get("platform_video_id"):
+                    existing.platform_video_id = data["platform_video_id"]
+                if data.get("platform_user_sec_uid"):
+                    existing.platform_user_sec_uid = data["platform_user_sec_uid"]
+                if data.get("reply_url"):
+                    existing.reply_url = data["reply_url"]
             else:
                 # Create new lead
                 lead = Lead(
@@ -438,6 +447,10 @@ class LeadService:
                     comment_content=data.get("comment_content"),
                     source_video_url=data.get("source_video_url"),
                     source_video_title=data.get("source_video_title"),
+                    platform_comment_id=data.get("platform_comment_id"),
+                    platform_video_id=data.get("platform_video_id"),
+                    platform_user_sec_uid=data.get("platform_user_sec_uid"),
+                    reply_url=data.get("reply_url"),
                 )
                 db.session.add(lead)
                 created_count += 1
@@ -535,12 +548,18 @@ class LeadService:
             "task_id": lead.task_id,
             "platform": lead.platform,
             "platform_user_id": lead.platform_user_id,
+            "platform_comment_id": lead.platform_comment_id,
+            "platform_video_id": lead.platform_video_id,
+            "platform_user_sec_uid": lead.platform_user_sec_uid,
             "nickname": lead.nickname,
             "avatar_url": lead.avatar_url,
             "region": lead.region,
             "comment_content": lead.comment_content,
             "source_video_url": lead.source_video_url,
             "source_video_title": lead.source_video_title,
+            "reply_url": lead.reply_url,
+            "replied_at": lead.replied_at.isoformat() if lead.replied_at else None,
+            "reply_content": lead.reply_content,
             "intent_score": lead.intent_score,
             "intent_tags": lead.intent_tags,
             "intent_reason": lead.intent_reason,

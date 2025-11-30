@@ -27,6 +27,9 @@ const translation = {
     markInvalid: 'Mark as Invalid',
     videoUrl: 'Video Link',
     viewVideo: 'View Video',
+    reply: 'Reply',
+    goReply: 'Go Reply',
+    replied: 'Replied',
   },
   status: {
     new: 'New',

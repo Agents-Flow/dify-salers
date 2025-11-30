@@ -86,6 +86,11 @@ class CrawledComment:
     region: str | None = None
     source_video_url: str | None = None
     source_video_title: str | None = None
+    # Platform-specific IDs for reply functionality
+    platform_comment_id: str | None = None
+    platform_video_id: str | None = None
+    platform_user_sec_uid: str | None = None
+    reply_url: str | None = None
 
 
 class CrawlerServiceError(Exception):
@@ -420,8 +425,10 @@ class MultiPlatformCrawlerService:
                 logger.info("Parsing file: %s with %s items", json_file.name, item_count)
 
                 if isinstance(data, list):
+                    # Convert CrawlerPlatform enum to platform string
+                    platform_str = platform.value if platform else "douyin"
                     for item in data:
-                        comment = self._parse_comment_item(item, video_url)
+                        comment = self._parse_comment_item(item, video_url, platform_str)
                         if comment:
                             comments.append(comment)
                             if len(comments) >= max_comments:
@@ -436,6 +443,7 @@ class MultiPlatformCrawlerService:
         self,
         item: dict[str, Any],
         video_url: str,
+        platform: str = "douyin",
     ) -> CrawledComment | None:
         """Parse a single comment item from MediaCrawler output."""
         try:
@@ -450,8 +458,16 @@ class MultiPlatformCrawlerService:
             content = item.get("content") or item.get("text", "")
             region = item.get("ip_location") or item.get("ip_label", "")
 
+            # Extract platform-specific IDs for reply functionality
+            comment_id = item.get("comment_id", "")
+            video_id = item.get("aweme_id") or item.get("note_id", "")
+            sec_uid = item.get("sec_uid", "")
+
             if not content:
                 return None
+
+            # Build reply URL based on platform
+            reply_url = self._build_reply_url(platform, video_id, comment_id)
 
             return CrawledComment(
                 platform_user_id=str(user_id),
@@ -461,10 +477,28 @@ class MultiPlatformCrawlerService:
                 region=region,
                 source_video_url=video_url,
                 source_video_title=item.get("aweme_title", ""),
+                platform_comment_id=str(comment_id) if comment_id else None,
+                platform_video_id=str(video_id) if video_id else None,
+                platform_user_sec_uid=sec_uid if sec_uid else None,
+                reply_url=reply_url,
             )
         except (KeyError, TypeError) as e:
             logger.debug("Failed to parse comment item: %s", e)
             return None
+
+    def _build_reply_url(self, platform: str, video_id: str, comment_id: str) -> str | None:
+        """Build a URL for replying to a comment on the platform."""
+        if not video_id or not comment_id:
+            return None
+
+        platform_urls = {
+            "douyin": f"https://www.douyin.com/video/{video_id}?comment_id={comment_id}",
+            "xiaohongshu": f"https://www.xiaohongshu.com/explore/{video_id}",
+            "kuaishou": f"https://www.kuaishou.com/short-video/{video_id}",
+            "bilibili": f"https://www.bilibili.com/video/{video_id}",
+            "weibo": f"https://weibo.com/detail/{video_id}",
+        }
+        return platform_urls.get(platform)
 
     def crawl_search_comments(
         self,
@@ -573,8 +607,10 @@ class MultiPlatformCrawlerService:
                 item_count = len(data) if isinstance(data, list) else 1
                 logger.info("Parsing search file: %s with %s items", search_file.name, item_count)
                 if isinstance(data, list):
+                    # Convert CrawlerPlatform enum to platform string
+                    platform_str = platform.value if platform else "douyin"
                     for item in data[:max_comments_per_video]:
-                        comment = self._parse_comment_item(item, "")
+                        comment = self._parse_comment_item(item, "", platform_str)
                         if comment:
                             comments.append(comment)
             except (json.JSONDecodeError, OSError) as e:

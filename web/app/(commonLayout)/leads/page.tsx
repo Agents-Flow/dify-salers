@@ -639,7 +639,7 @@ const LeadsPage: FC = () => {
               : (
                 <>
                   <div className='overflow-x-auto rounded-xl border border-divider-subtle bg-components-panel-bg'>
-                    <table className='w-full min-w-[1000px]'>
+                    <table className='w-full min-w-[1100px]'>
                       <thead>
                         <tr className='border-b border-divider-subtle'>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.nickname')}</th>
@@ -649,6 +649,7 @@ const LeadsPage: FC = () => {
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.region')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.intentScore')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.status')}</th>
+                          <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.reply')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.actions')}</th>
                         </tr>
                       </thead>
@@ -690,6 +691,20 @@ const LeadsPage: FC = () => {
                               <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getStatusClassName(lead.status)}`}>
                                 {t(`leads.status.${lead.status}`)}
                               </span>
+                            </td>
+                            <td className='px-4 py-3'>
+                              {lead.reply_url
+                                ? (
+                                  <a
+                                    href={lead.reply_url}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    className='inline-flex items-center gap-1 rounded-md bg-util-colors-green-green-50 px-2 py-1 text-xs font-medium text-util-colors-green-green-600 hover:bg-util-colors-green-green-100'
+                                  >
+                                    {lead.replied_at ? t('leads.lead.replied') : t('leads.lead.goReply')}
+                                  </a>
+                                )
+                                : <span className='text-text-quaternary'>-</span>}
                             </td>
                             <td className='px-4 py-3'>
                               <div className='flex items-center gap-1'>
