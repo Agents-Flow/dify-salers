@@ -648,8 +648,10 @@ class LeadService:
         if not video_id or not comment_id:
             return None
 
+        # Link to the video page - user can find and reply to the comment
+        # Note: Douyin web doesn't support direct comment linking
         platform_urls = {
-            "douyin": f"https://www.douyin.com/video/{video_id}?comment_id={comment_id}",
+            "douyin": f"https://www.douyin.com/video/{video_id}",
             "xiaohongshu": f"https://www.xiaohongshu.com/explore/{video_id}",
             "kuaishou": f"https://www.kuaishou.com/short-video/{video_id}",
             "bilibili": f"https://www.bilibili.com/video/{video_id}",
