@@ -496,6 +496,14 @@ class LeadService:
             platform_user_id = data.get("platform_user_id")
             platform = data.get("platform", "douyin")
 
+            # Auto-generate reply_url if missing but video_id and comment_id exist
+            reply_url = data.get("reply_url")
+            if not reply_url:
+                video_id = data.get("platform_video_id")
+                comment_id = data.get("platform_comment_id")
+                if video_id and comment_id:
+                    reply_url = LeadService._build_reply_url(platform, video_id, comment_id)
+
             # Check for existing lead
             existing = (
                 db.session.query(Lead)
@@ -525,8 +533,9 @@ class LeadService:
                     existing.platform_video_id = data["platform_video_id"]
                 if data.get("platform_user_sec_uid"):
                     existing.platform_user_sec_uid = data["platform_user_sec_uid"]
-                if data.get("reply_url"):
-                    existing.reply_url = data["reply_url"]
+                # Always update reply_url (auto-generated or from data)
+                if reply_url:
+                    existing.reply_url = reply_url
             else:
                 # Create new lead
                 lead = Lead(
@@ -544,7 +553,7 @@ class LeadService:
                     platform_comment_id=data.get("platform_comment_id"),
                     platform_video_id=data.get("platform_video_id"),
                     platform_user_sec_uid=data.get("platform_user_sec_uid"),
-                    reply_url=data.get("reply_url"),
+                    reply_url=reply_url,
                 )
                 db.session.add(lead)
                 created_count += 1
@@ -632,6 +641,21 @@ class LeadService:
                 "converted": converted_count,
                 "high_intent": high_intent_count,
             }
+
+    @staticmethod
+    def _build_reply_url(platform: str, video_id: str, comment_id: str) -> str | None:
+        """Build a reply URL based on platform, video ID, and comment ID."""
+        if not video_id or not comment_id:
+            return None
+
+        platform_urls = {
+            "douyin": f"https://www.douyin.com/video/{video_id}?comment_id={comment_id}",
+            "xiaohongshu": f"https://www.xiaohongshu.com/explore/{video_id}",
+            "kuaishou": f"https://www.kuaishou.com/short-video/{video_id}",
+            "bilibili": f"https://www.bilibili.com/video/{video_id}",
+            "weibo": f"https://weibo.com/detail/{video_id}",
+        }
+        return platform_urls.get(platform)
 
     @staticmethod
     def _lead_to_dict(lead: Lead) -> dict[str, Any]:
