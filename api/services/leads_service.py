@@ -10,7 +10,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from extensions.ext_database import db
-from models.leads import Lead, LeadStatus, LeadTask, LeadTaskStatus, SupportedPlatform
+from models.leads import Lead, LeadStatus, LeadTask, LeadTaskRun, LeadTaskStatus, SupportedPlatform
 
 logger = logging.getLogger(__name__)
 
@@ -296,6 +296,91 @@ class LeadTaskService:
         }
 
 
+class LeadTaskRunService:
+    """Service for managing task execution runs."""
+
+    @staticmethod
+    def create_run(task_id: str, config_snapshot: dict | None = None) -> LeadTaskRun:
+        """Create a new task run record."""
+        # Get next run number
+        max_run = db.session.query(func.max(LeadTaskRun.run_number)).filter(
+            LeadTaskRun.task_id == task_id
+        ).scalar() or 0
+
+        run = LeadTaskRun(
+            task_id=task_id,
+            run_number=max_run + 1,
+            config_snapshot=config_snapshot,
+        )
+        db.session.add(run)
+        db.session.commit()
+        logger.info("Created task run %s for task %s (run #%s)", run.id, task_id, run.run_number)
+        return run
+
+    @staticmethod
+    def complete_run(
+        run_id: str,
+        status: str = "completed",
+        total_crawled: int = 0,
+        total_created: int = 0,
+        error_message: str | None = None,
+    ) -> None:
+        """Mark a task run as completed."""
+        run = db.session.query(LeadTaskRun).filter_by(id=run_id).first()
+        if run:
+            run.status = status
+            run.completed_at = func.current_timestamp()
+            run.total_crawled = total_crawled
+            run.total_created = total_created
+            if error_message:
+                run.error_message = error_message
+            db.session.commit()
+
+    @staticmethod
+    def get_task_runs(task_id: str, limit: int = 10) -> list[dict[str, Any]]:
+        """Get execution history for a task."""
+        runs = db.session.query(LeadTaskRun).filter_by(
+            task_id=task_id
+        ).order_by(LeadTaskRun.started_at.desc()).limit(limit).all()
+
+        return [
+            {
+                "id": run.id,
+                "run_number": run.run_number,
+                "status": run.status,
+                "started_at": run.started_at.isoformat() if run.started_at else None,
+                "completed_at": run.completed_at.isoformat() if run.completed_at else None,
+                "total_crawled": run.total_crawled,
+                "total_created": run.total_created,
+                "config_snapshot": run.config_snapshot,
+                "error_message": run.error_message,
+            }
+            for run in runs
+        ]
+
+    @staticmethod
+    def get_latest_run(task_id: str) -> dict[str, Any] | None:
+        """Get the most recent run for a task."""
+        run = db.session.query(LeadTaskRun).filter_by(
+            task_id=task_id
+        ).order_by(LeadTaskRun.started_at.desc()).first()
+
+        if not run:
+            return None
+
+        return {
+            "id": run.id,
+            "run_number": run.run_number,
+            "status": run.status,
+            "started_at": run.started_at.isoformat() if run.started_at else None,
+            "completed_at": run.completed_at.isoformat() if run.completed_at else None,
+            "total_crawled": run.total_crawled,
+            "total_created": run.total_created,
+            "config_snapshot": run.config_snapshot,
+            "error_message": run.error_message,
+        }
+
+
 class LeadService:
     """Service for managing leads (potential customers)."""
 
@@ -307,6 +392,7 @@ class LeadService:
         status: str | None = None,
         min_intent: int | None = None,
         task_id: str | None = None,
+        task_run_id: str | None = None,
         keyword: str | None = None,
         platform: str | None = None,
     ) -> dict[str, Any]:
@@ -320,6 +406,7 @@ class LeadService:
             status: Optional status filter
             min_intent: Minimum intent score filter
             task_id: Optional task ID filter
+            task_run_id: Optional task run ID filter
             keyword: Optional keyword search
             platform: Optional platform filter
 
@@ -335,6 +422,8 @@ class LeadService:
                 query = query.where(Lead.intent_score >= min_intent)
             if task_id:
                 query = query.where(Lead.task_id == task_id)
+            if task_run_id:
+                query = query.where(Lead.task_run_id == task_run_id)
             if platform:
                 query = query.where(Lead.platform == platform)
             if keyword:
@@ -387,6 +476,7 @@ class LeadService:
         tenant_id: str,
         task_id: str,
         leads_data: list[dict],
+        task_run_id: str | None = None,
     ) -> int:
         """
         Batch create leads with deduplication.
@@ -395,6 +485,7 @@ class LeadService:
             tenant_id: The tenant ID
             task_id: Task ID
             leads_data: List of lead data dictionaries
+            task_run_id: Optional task run ID for tracking execution history
 
         Returns:
             Number of leads created
@@ -417,8 +508,10 @@ class LeadService:
             )
 
             if existing:
-                # Update existing lead with new task reference
+                # Update existing lead with new task/run reference
                 existing.task_id = task_id
+                if task_run_id:
+                    existing.task_run_id = task_run_id
                 if data.get("comment_content"):
                     existing.comment_content = data["comment_content"]
                 if data.get("source_video_url"):
@@ -439,6 +532,7 @@ class LeadService:
                 lead = Lead(
                     tenant_id=tenant_id,
                     task_id=task_id,
+                    task_run_id=task_run_id,
                     platform=platform,
                     platform_user_id=platform_user_id,
                     nickname=data.get("nickname"),
@@ -546,6 +640,7 @@ class LeadService:
             "id": lead.id,
             "tenant_id": lead.tenant_id,
             "task_id": lead.task_id,
+            "task_run_id": lead.task_run_id,
             "platform": lead.platform,
             "platform_user_id": lead.platform_user_id,
             "platform_comment_id": lead.platform_comment_id,

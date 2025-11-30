@@ -38,6 +38,7 @@ from .leads import (
     Lead,
     LeadStatus,
     LeadTask,
+    LeadTaskRun,
     LeadTaskStatus,
     SupportedPlatform,
 )
@@ -164,7 +165,7 @@ __all__ = [
     "Lead",
     "LeadStatus",
     "LeadTask",
-    "LeadTaskStatus",
+    "LeadTaskRun",
     "LeadTaskStatus",
     "LoadBalancingModelConfig",
     "Message",

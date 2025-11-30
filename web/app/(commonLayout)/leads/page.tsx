@@ -28,10 +28,11 @@ import {
   useRestartLeadTask,
   useRunLeadTask,
   useTaskLeads,
+  useTaskRuns,
   useUpdateLead,
   useUpdateLeadTask,
 } from '@/service/use-leads'
-import type { CreateLeadTaskData, Lead, LeadTask, UpdateLeadTaskData } from '@/service/use-leads'
+import type { CreateLeadTaskData, Lead, LeadTask, TaskRun, UpdateLeadTaskData } from '@/service/use-leads'
 import { useAppContext } from '@/context/app-context'
 
 // Status color utilities
@@ -228,8 +229,15 @@ const TaskDetailView: FC<TaskDetailViewProps> = ({ task, onBack, onEdit, onResta
   const [page, setPage] = useState(1)
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
   const [clearLeadsOnRestart, setClearLeadsOnRestart] = useState(false)
+  const [selectedRunId, setSelectedRunId] = useState<string>('')
 
-  const { data: leadsData, isLoading, refetch } = useTaskLeads(task.id, { page, limit: 20 })
+  // Fetch execution history
+  const { data: runsData } = useTaskRuns(task.id)
+
+  const { data: leadsData, isLoading, refetch } = useTaskLeads(
+    task.id,
+    { page, limit: 20, task_run_id: selectedRunId || undefined },
+  )
 
   // Refetch leads when task status changes to completed
   useEffect(() => {
@@ -239,6 +247,11 @@ const TaskDetailView: FC<TaskDetailViewProps> = ({ task, onBack, onEdit, onResta
 
   const canEdit = task.status !== 'running'
   const canRestart = task.status === 'completed' || task.status === 'failed'
+
+  const formatRunLabel = (run: TaskRun) => {
+    const date = run.started_at ? new Date(run.started_at).toLocaleString() : ''
+    return `#${run.run_number} - ${date} (${run.total_created} ${t('leads.task.leads')})`
+  }
 
   return (
     <div className='space-y-6'>
@@ -320,7 +333,29 @@ const TaskDetailView: FC<TaskDetailViewProps> = ({ task, onBack, onEdit, onResta
 
       {/* Leads List */}
       <div>
-        <h3 className='mb-3 text-sm font-medium text-text-secondary'>{t('leads.task.collectedLeads')}</h3>
+        <div className='mb-3 flex items-center justify-between'>
+          <h3 className='text-sm font-medium text-text-secondary'>{t('leads.task.collectedLeads')}</h3>
+          {runsData && runsData.data.length > 0 && (
+            <div className='flex items-center gap-2'>
+              <span className='text-xs text-text-tertiary'>{t('leads.task.executionHistory')}:</span>
+              <select
+                value={selectedRunId}
+                onChange={(e) => {
+                  setSelectedRunId(e.target.value)
+                  setPage(1)
+                }}
+                className='h-8 rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-2 text-xs text-text-secondary focus:border-components-input-border-active focus:outline-none'
+              >
+                <option value=''>{t('leads.task.allRuns')}</option>
+                {runsData.data.map(run => (
+                  <option key={run.id} value={run.id}>
+                    {formatRunLabel(run)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
         {isLoading
           ? (
             <div className='flex h-[200px] items-center justify-center'>

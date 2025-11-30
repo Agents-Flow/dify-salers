@@ -60,6 +60,9 @@ const translation = {
     viewDetails: '查看详情',
     collectedLeads: '已获取的客户',
     error: '错误信息',
+    executionHistory: '执行历史',
+    allRuns: '全部执行记录',
+    leads: '条',
   },
   taskStatus: {
     pending: '待执行',
@@ -82,6 +85,8 @@ const translation = {
     videoUrlRequired: '请至少输入一个视频链接',
     keywords: '关键词',
     keywordsPlaceholder: '输入关键词，用逗号分隔',
+    commentKeywords: '评论关键词',
+    commentKeywordsPlaceholder: '只保留包含这些关键词的评论（用逗号分隔）',
     city: '城市',
     cityPlaceholder: '目标城市（可选）',
     maxComments: '最大评论数',

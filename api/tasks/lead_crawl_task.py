@@ -21,7 +21,7 @@ from services.leads.intent_analysis_service import (
     IntentAnalysisError,
     IntentAnalysisService,
 )
-from services.leads_service import LeadService, LeadTaskService
+from services.leads_service import LeadService, LeadTaskRunService, LeadTaskService
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +56,11 @@ def crawl_lead_task(task_id: str):
         logger.warning("Task %s is not in running status, skipping", task_id)
         return
 
+    # Create a task run record for tracking execution history
+    task_run = LeadTaskRunService.create_run(task_id, config_snapshot=task.config)
+    task_run_id = task_run.id
+    logger.info("Created task run %s (run #%s) for task %s", task_run_id, task_run.run_number, task_id)
+
     try:
         config = task.config or {}
         tenant_id = task.tenant_id
@@ -64,16 +69,26 @@ def crawl_lead_task(task_id: str):
         video_urls = config.get("video_urls", [])
         keywords = config.get("keywords", [])
         max_comments = config.get("max_comments", 500)
+        comment_keywords = config.get("comment_keywords", [])  # Keywords to filter comments
 
         # Get platform from task (default to douyin)
         platform = task.platform or "douyin"
         logger.info(
-            "Task config: platform=%s, videos=%s, keywords=%s, max=%s",
-            platform, len(video_urls), keywords, max_comments
+            "Task config: platform=%s, videos=%s, keywords=%s, comment_keywords=%s, max=%s",
+            platform, len(video_urls), keywords, comment_keywords, max_comments
         )
 
         # Crawl leads using MediaCrawler service
         crawled_leads = _crawl_leads(video_urls, keywords, config.get("city"), max_comments, platform)
+
+        # Filter by comment keywords if specified
+        if comment_keywords and crawled_leads:
+            original_count = len(crawled_leads)
+            crawled_leads = _filter_by_keywords(crawled_leads, comment_keywords)
+            logger.info(
+                "Filtered comments by keywords %s: %s -> %s",
+                comment_keywords, original_count, len(crawled_leads)
+            )
 
         # Store leads in database
         if crawled_leads:
@@ -81,13 +96,22 @@ def crawl_lead_task(task_id: str):
                 tenant_id=tenant_id,
                 task_id=task_id,
                 leads_data=crawled_leads,
+                task_run_id=task_run_id,
             )
-            logger.info("Created %s leads for task %s", created_count, task_id)
+            logger.info("Created %s leads for task %s (run %s)", created_count, task_id, task_run_id)
         else:
             created_count = 0
 
-        # Update task as completed
+        # Update task run as completed
         elapsed = time.perf_counter() - start_time
+        LeadTaskRunService.complete_run(
+            run_id=task_run_id,
+            status="completed",
+            total_crawled=len(crawled_leads),
+            total_created=created_count,
+        )
+
+        # Update task status
         LeadTaskService.update_task_status(
             task_id=task_id,
             status=LeadTaskStatus.COMPLETED,
@@ -95,19 +119,27 @@ def crawl_lead_task(task_id: str):
                 "total_crawled": len(crawled_leads),
                 "total_created": created_count,
                 "elapsed_seconds": round(elapsed, 2),
+                "task_run_id": task_run_id,
             },
             total_leads=created_count,
         )
 
         logger.info(
-            click.style("Lead task completed: %s, created %s leads in %.2fs", fg="green"),
+            click.style("Lead task completed: %s (run %s), created %s leads in %.2fs", fg="green"),
             task_id,
+            task_run_id,
             created_count,
             elapsed,
         )
 
     except Exception as e:
         logger.exception("Lead task failed: %s", task_id)
+        # Mark task run as failed
+        LeadTaskRunService.complete_run(
+            run_id=task_run_id,
+            status="failed",
+            error_message=str(e),
+        )
         LeadTaskService.update_task_status(
             task_id=task_id,
             status=LeadTaskStatus.FAILED,
@@ -177,6 +209,35 @@ def _crawl_leads(
 
     # Convert to dictionary format for database storage
     return [_comment_to_dict(c) for c in all_comments]
+
+
+def _filter_by_keywords(leads: list[dict], keywords: list[str]) -> list[dict]:
+    """
+    Filter leads by comment keywords.
+    Only keeps leads where comment_content contains at least one of the keywords.
+
+    Args:
+        leads: List of lead dictionaries
+        keywords: List of keywords to filter by (case-insensitive)
+
+    Returns:
+        Filtered list of leads
+    """
+    if not keywords:
+        return leads
+
+    # Convert keywords to lowercase for case-insensitive matching
+    keywords_lower = [kw.lower() for kw in keywords]
+
+    filtered = []
+    for lead in leads:
+        content = lead.get("comment_content", "") or ""
+        content_lower = content.lower()
+        # Check if any keyword is in the comment
+        if any(kw in content_lower for kw in keywords_lower):
+            filtered.append(lead)
+
+    return filtered
 
 
 def _comment_to_dict(comment: CrawledComment) -> dict:

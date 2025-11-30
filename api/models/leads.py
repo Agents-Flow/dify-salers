@@ -127,6 +127,75 @@ class LeadTask(TypeBase):
         return f"<LeadTask(id={self.id}, name={self.name}, status={self.status})>"
 
 
+class LeadTaskRun(TypeBase):
+    """
+    Lead task execution record.
+    Tracks each individual run of a task for history and filtering.
+    """
+
+    __tablename__ = "lead_task_runs"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="lead_task_run_pkey"),
+        sa.Index("lead_task_run_task_idx", "task_id"),
+        sa.Index("lead_task_run_started_at_idx", "started_at"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    task_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    run_number: Mapped[int] = mapped_column(
+        sa.Integer,
+        nullable=False,
+        default=1,
+    )
+    status: Mapped[str] = mapped_column(
+        String(50),
+        default="running",
+        server_default=sa.text("'running'"),
+    )
+    started_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime,
+        nullable=True,
+        default=None,
+        init=False,
+    )
+    total_crawled: Mapped[int] = mapped_column(
+        sa.Integer,
+        default=0,
+        server_default=sa.text("0"),
+        init=False,
+    )
+    total_created: Mapped[int] = mapped_column(
+        sa.Integer,
+        default=0,
+        server_default=sa.text("0"),
+        init=False,
+    )
+    config_snapshot: Mapped[dict[str, Any] | None] = mapped_column(
+        JSON,
+        nullable=True,
+        default=None,
+    )
+    error_message: Mapped[str | None] = mapped_column(
+        LongText,
+        nullable=True,
+        default=None,
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<LeadTaskRun(id={self.id}, task_id={self.task_id}, run={self.run_number})>"
+
+
 class Lead(TypeBase):
     """
     Lead (potential customer) model.
@@ -138,6 +207,7 @@ class Lead(TypeBase):
         sa.PrimaryKeyConstraint("id", name="lead_pkey"),
         sa.Index("lead_tenant_idx", "tenant_id"),
         sa.Index("lead_task_idx", "task_id"),
+        sa.Index("lead_task_run_idx", "task_run_id"),
         sa.Index("lead_status_idx", "status"),
         sa.Index("lead_intent_idx", "intent_score"),
         sa.Index("lead_created_at_idx", "created_at"),
@@ -151,6 +221,11 @@ class Lead(TypeBase):
     )
     tenant_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
     task_id: Mapped[str | None] = mapped_column(
+        StringUUID,
+        nullable=True,
+        default=None,
+    )
+    task_run_id: Mapped[str | None] = mapped_column(
         StringUUID,
         nullable=True,
         default=None,

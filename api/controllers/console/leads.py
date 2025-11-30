@@ -13,7 +13,7 @@ from controllers.console.wraps import (
     setup_required,
 )
 from libs.login import current_account_with_tenant, login_required
-from services.leads_service import LeadService, LeadTaskService
+from services.leads_service import LeadService, LeadTaskRunService, LeadTaskService
 
 # === API Models for Swagger Documentation ===
 
@@ -22,6 +22,7 @@ lead_task_config_model = console_ns.model(
     {
         "video_urls": fields.List(fields.String, description="List of video URLs to crawl"),
         "keywords": fields.List(fields.String, description="Search keywords"),
+        "comment_keywords": fields.List(fields.String, description="Keywords to filter comments"),
         "city": fields.String(description="Target city"),
         "max_comments": fields.Integer(description="Maximum comments to crawl"),
     },
@@ -279,6 +280,7 @@ class LeadTaskLeadsApi(Resource):
             "task_id": "Task ID",
             "page": "Page number (default: 1)",
             "limit": "Items per page (default: 50)",
+            "task_run_id": "Filter by specific task run ID",
         }
     )
     @setup_required
@@ -295,14 +297,45 @@ class LeadTaskLeadsApi(Resource):
 
         page = request.args.get("page", 1, type=int)
         limit = request.args.get("limit", 50, type=int)
+        task_run_id = request.args.get("task_run_id", type=str)
 
         result = LeadService.get_leads(
             tenant_id=tenant_id,
             page=page,
             limit=limit,
             task_id=str(task_id),
+            task_run_id=task_run_id,
         )
         return result, 200
+
+
+@console_ns.route("/lead-tasks/<uuid:task_id>/runs")
+class LeadTaskRunsApi(Resource):
+    """Get execution history for a task."""
+
+    @console_ns.doc("get_task_runs")
+    @console_ns.doc(description="Get execution history (runs) for a task")
+    @console_ns.doc(
+        params={
+            "task_id": "Task ID",
+            "limit": "Number of runs to return (default: 10)",
+        }
+    )
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self, task_id):
+        """Get task execution history."""
+        _, tenant_id = current_account_with_tenant()
+
+        # Verify task exists and belongs to tenant
+        task = LeadTaskService.get_task(tenant_id, str(task_id))
+        if not task:
+            raise NotFound("Task not found")
+
+        limit = request.args.get("limit", 10, type=int)
+        runs = LeadTaskRunService.get_task_runs(str(task_id), limit)
+        return {"data": runs}, 200
 
 
 # === Lead APIs ===

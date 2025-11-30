@@ -60,6 +60,9 @@ const translation = {
     viewDetails: 'View Details',
     collectedLeads: 'Collected Leads',
     error: 'Error',
+    executionHistory: 'Execution History',
+    allRuns: 'All Executions',
+    leads: 'leads',
   },
   taskStatus: {
     pending: 'Pending',
@@ -82,6 +85,8 @@ const translation = {
     videoUrlRequired: 'At least one video URL is required',
     keywords: 'Keywords',
     keywordsPlaceholder: 'Enter keywords, comma separated',
+    commentKeywords: 'Comment Keywords',
+    commentKeywordsPlaceholder: 'Filter comments containing these keywords (comma separated)',
     city: 'City',
     cityPlaceholder: 'Target city (optional)',
     maxComments: 'Max Comments',

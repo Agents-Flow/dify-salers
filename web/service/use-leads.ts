@@ -13,6 +13,7 @@ export type Lead = {
   id: string
   tenant_id: string
   task_id: string | null
+  task_run_id: string | null
   platform: string
   platform_user_id: string | null
   platform_comment_id: string | null
@@ -46,6 +47,7 @@ export type LeadTask = {
   config: {
     video_urls?: string[]
     keywords?: string[]
+    comment_keywords?: string[]
     city?: string
     max_comments?: number
   }
@@ -55,6 +57,22 @@ export type LeadTask = {
   created_by: string | null
   created_at: string
   updated_at: string
+}
+
+export type TaskRun = {
+  id: string
+  run_number: number
+  status: 'running' | 'completed' | 'failed'
+  started_at: string | null
+  completed_at: string | null
+  total_crawled: number
+  total_created: number
+  config_snapshot: LeadTask['config'] | null
+  error_message: string | null
+}
+
+export type TaskRunsResponse = {
+  data: TaskRun[]
 }
 
 export type LeadListResponse = {
@@ -245,13 +263,25 @@ export const useRestartLeadTask = () => {
   })
 }
 
-export const useTaskLeads = (taskId: string, params: { page?: number; limit?: number } = {}, enabled = true) => {
+export const useTaskLeads = (
+  taskId: string,
+  params: { page?: number; limit?: number; task_run_id?: string } = {},
+  enabled = true,
+) => {
   return useQuery<LeadListResponse>({
     queryKey: [NAME_SPACE, 'task-leads', taskId, params],
     queryFn: () => get<LeadListResponse>(`/lead-tasks/${taskId}/leads`, { params }),
     enabled: enabled && !!taskId,
     refetchOnWindowFocus: true,
     staleTime: 0, // Always refetch when query key changes
+  })
+}
+
+export const useTaskRuns = (taskId: string, enabled = true) => {
+  return useQuery<TaskRunsResponse>({
+    queryKey: [NAME_SPACE, 'task-runs', taskId],
+    queryFn: () => get<TaskRunsResponse>(`/lead-tasks/${taskId}/runs`),
+    enabled: enabled && !!taskId,
   })
 }
 
