@@ -229,7 +229,13 @@ const TaskDetailView: FC<TaskDetailViewProps> = ({ task, onBack, onEdit, onResta
   const [showRestartConfirm, setShowRestartConfirm] = useState(false)
   const [clearLeadsOnRestart, setClearLeadsOnRestart] = useState(false)
 
-  const { data: leadsData, isLoading } = useTaskLeads(task.id, { page, limit: 20 })
+  const { data: leadsData, isLoading, refetch } = useTaskLeads(task.id, { page, limit: 20 })
+
+  // Refetch leads when task status changes to completed
+  useEffect(() => {
+    if (task.status === 'completed' && task.total_leads > 0)
+      refetch()
+  }, [task.status, task.total_leads, refetch])
 
   const canEdit = task.status !== 'running'
   const canRestart = task.status === 'completed' || task.status === 'failed'

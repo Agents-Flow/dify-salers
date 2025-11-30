@@ -243,6 +243,8 @@ export const useTaskLeads = (taskId: string, params: { page?: number; limit?: nu
     queryKey: [NAME_SPACE, 'task-leads', taskId, params],
     queryFn: () => get<LeadListResponse>(`/lead-tasks/${taskId}/leads`, { params }),
     enabled: enabled && !!taskId,
+    refetchOnWindowFocus: true,
+    staleTime: 0, // Always refetch when query key changes
   })
 }
 
