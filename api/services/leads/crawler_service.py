@@ -466,8 +466,9 @@ class MultiPlatformCrawlerService:
             if not content:
                 return None
 
-            # Build reply URL based on platform
+            # Build reply URL and clean video URL based on platform
             reply_url = self._build_reply_url(platform, video_id, comment_id)
+            clean_video_url = self._build_video_url(platform, video_id) or video_url
 
             return CrawledComment(
                 platform_user_id=str(user_id),
@@ -475,16 +476,30 @@ class MultiPlatformCrawlerService:
                 avatar_url=avatar,
                 comment_content=content,
                 region=region,
-                source_video_url=video_url,
+                source_video_url=clean_video_url,
                 source_video_title=item.get("aweme_title", ""),
                 platform_comment_id=str(comment_id) if comment_id else None,
                 platform_video_id=str(video_id) if video_id else None,
-                platform_user_sec_uid=sec_uid if sec_uid else None,
+                platform_user_sec_uid=sec_uid or None,
                 reply_url=reply_url,
             )
         except (KeyError, TypeError) as e:
             logger.debug("Failed to parse comment item: %s", e)
             return None
+
+    def _build_video_url(self, platform: str, video_id: str) -> str | None:
+        """Build a clean video URL based on platform and video ID."""
+        if not video_id:
+            return None
+
+        platform_urls = {
+            "douyin": f"https://www.douyin.com/video/{video_id}",
+            "xiaohongshu": f"https://www.xiaohongshu.com/explore/{video_id}",
+            "kuaishou": f"https://www.kuaishou.com/short-video/{video_id}",
+            "bilibili": f"https://www.bilibili.com/video/{video_id}",
+            "weibo": f"https://weibo.com/detail/{video_id}",
+        }
+        return platform_urls.get(platform)
 
     def _build_reply_url(self, platform: str, video_id: str, comment_id: str) -> str | None:
         """Build a URL for replying to a comment on the platform."""
