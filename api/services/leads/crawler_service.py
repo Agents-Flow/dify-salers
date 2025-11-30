@@ -391,16 +391,23 @@ class MultiPlatformCrawlerService:
         """Parse the JSON output from MediaCrawler."""
         platform_config = PLATFORM_CONFIG_MAP.get(platform)
         data_dir = platform_config["data_dir"] if platform_config else "douyin"
-        output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / data_dir
+        # MediaCrawler saves JSON files in data/{platform}/json/ subdirectory
+        output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / data_dir / "json"
 
-        # Find the latest output file
-        json_files = list(output_path.glob("*.json"))
+        # Find the latest comment files (detail_comments_*.json or search_comments_*.json)
+        json_files = list(output_path.glob("*comments*.json"))
+        if not json_files:
+            # Fallback to parent directory if json subdir doesn't exist
+            output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / data_dir
+            json_files = list(output_path.glob("*.json"))
+
         if not json_files:
             logger.warning("No output files found in %s", output_path)
             return []
 
         # Sort by modification time, newest first
         json_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+        logger.info("Found %s comment files, parsing newest ones", len(json_files))
 
         comments: list[CrawledComment] = []
 
@@ -408,6 +415,9 @@ class MultiPlatformCrawlerService:
             try:
                 with open(json_file, encoding="utf-8") as f:
                     data = json.load(f)
+
+                item_count = len(data) if isinstance(data, list) else 1
+                logger.info("Parsing file: %s with %s items", json_file.name, item_count)
 
                 if isinstance(data, list):
                     for item in data:
@@ -429,15 +439,26 @@ class MultiPlatformCrawlerService:
     ) -> CrawledComment | None:
         """Parse a single comment item from MediaCrawler output."""
         try:
-            # MediaCrawler comment structure
-            user_info = item.get("user", {})
+            # MediaCrawler comment format varies by platform
+            # For Douyin: user_id, nickname, content, ip_location, avatar are direct fields
+            # For legacy format: user object with uid, nickname, avatar
+
+            # Try new format first (direct fields)
+            user_id = item.get("user_id") or item.get("user", {}).get("uid", "")
+            nickname = item.get("nickname") or item.get("user", {}).get("nickname", "")
+            avatar = item.get("avatar") or item.get("user", {}).get("avatar", "")
+            content = item.get("content") or item.get("text", "")
+            region = item.get("ip_location") or item.get("ip_label", "")
+
+            if not content:
+                return None
 
             return CrawledComment(
-                platform_user_id=str(user_info.get("uid", "")),
-                nickname=user_info.get("nickname", ""),
-                avatar_url=user_info.get("avatar", ""),
-                comment_content=item.get("text", ""),
-                region=item.get("ip_label", ""),
+                platform_user_id=str(user_id),
+                nickname=nickname,
+                avatar_url=avatar,
+                comment_content=content,
+                region=region,
                 source_video_url=video_url,
                 source_video_title=item.get("aweme_title", ""),
             )
@@ -531,19 +552,31 @@ class MultiPlatformCrawlerService:
         """Parse search results from MediaCrawler."""
         platform_config = PLATFORM_CONFIG_MAP.get(platform)
         data_dir = platform_config["data_dir"] if platform_config else "douyin"
-        output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / data_dir
+        # MediaCrawler saves JSON files in data/{platform}/json/ subdirectory
+        output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / data_dir / "json"
         comments: list[CrawledComment] = []
 
-        # Find and parse search result files
-        search_files = list(output_path.glob(f"*{keyword}*.json"))
+        # Find search comment files (search_comments_*.json)
+        search_files = list(output_path.glob("search_comments*.json"))
+        if not search_files:
+            # Fallback to parent directory
+            output_path = Path(self.MEDIA_CRAWLER_PATH) / "data" / data_dir
+            search_files = list(output_path.glob(f"*{keyword}*.json"))
+
+        # Sort by modification time, newest first
+        search_files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+
         for search_file in search_files[:max_videos]:
             try:
                 with open(search_file, encoding="utf-8") as f:
                     data = json.load(f)
-                for item in data[:max_comments_per_video]:
-                    comment = self._parse_comment_item(item, "")
-                    if comment:
-                        comments.append(comment)
+                item_count = len(data) if isinstance(data, list) else 1
+                logger.info("Parsing search file: %s with %s items", search_file.name, item_count)
+                if isinstance(data, list):
+                    for item in data[:max_comments_per_video]:
+                        comment = self._parse_comment_item(item, "")
+                        if comment:
+                            comments.append(comment)
             except (json.JSONDecodeError, OSError) as e:
                 logger.warning("Failed to parse %s: %s", search_file, e)
 
