@@ -28,6 +28,7 @@ export type Lead = {
   reply_url: string | null
   replied_at: string | null
   reply_content: string | null
+  profile_url: string | null
   intent_score: number
   intent_tags: string[] | null
   intent_reason: string | null

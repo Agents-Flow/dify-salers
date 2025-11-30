@@ -30,6 +30,8 @@ const translation = {
     reply: '回复',
     goReply: '去回复',
     replied: '已回复',
+    dm: '私信',
+    sendDM: '发私信',
   },
   status: {
     new: '新客户',

@@ -685,6 +685,7 @@ const LeadsPage: FC = () => {
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.intentScore')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.status')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.reply')}</th>
+                          <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.dm')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.actions')}</th>
                         </tr>
                       </thead>
@@ -737,6 +738,20 @@ const LeadsPage: FC = () => {
                                     className='inline-flex items-center gap-1 rounded-md bg-util-colors-green-green-50 px-2 py-1 text-xs font-medium text-util-colors-green-green-600 hover:bg-util-colors-green-green-100'
                                   >
                                     {lead.replied_at ? t('leads.lead.replied') : t('leads.lead.goReply')}
+                                  </a>
+                                )
+                                : <span className='text-text-quaternary'>-</span>}
+                            </td>
+                            <td className='px-4 py-3'>
+                              {lead.profile_url
+                                ? (
+                                  <a
+                                    href={lead.profile_url}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    className='inline-flex items-center gap-1 rounded-md bg-util-colors-indigo-indigo-50 px-2 py-1 text-xs font-medium text-util-colors-indigo-indigo-600 hover:bg-util-colors-indigo-indigo-100'
+                                  >
+                                    {t('leads.lead.sendDM')}
                                   </a>
                                 )
                                 : <span className='text-text-quaternary'>-</span>}

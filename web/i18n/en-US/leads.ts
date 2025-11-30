@@ -30,6 +30,8 @@ const translation = {
     reply: 'Reply',
     goReply: 'Go Reply',
     replied: 'Replied',
+    dm: 'DM',
+    sendDM: 'Send DM',
   },
   status: {
     new: 'New',

@@ -660,8 +660,26 @@ class LeadService:
         return platform_urls.get(platform)
 
     @staticmethod
+    def _build_profile_url(platform: str, sec_uid: str | None) -> str | None:
+        """Build user profile URL for direct messaging."""
+        if not sec_uid:
+            return None
+
+        platform_urls = {
+            "douyin": f"https://www.douyin.com/user/{sec_uid}",
+            "xiaohongshu": f"https://www.xiaohongshu.com/user/profile/{sec_uid}",
+            "kuaishou": f"https://www.kuaishou.com/profile/{sec_uid}",
+            "bilibili": f"https://space.bilibili.com/{sec_uid}",
+            "weibo": f"https://weibo.com/u/{sec_uid}",
+        }
+        return platform_urls.get(platform)
+
+    @staticmethod
     def _lead_to_dict(lead: Lead) -> dict[str, Any]:
         """Convert lead model to dictionary."""
+        # Generate profile URL for DM functionality
+        profile_url = LeadService._build_profile_url(lead.platform, lead.platform_user_sec_uid)
+
         return {
             "id": lead.id,
             "tenant_id": lead.tenant_id,
@@ -681,6 +699,7 @@ class LeadService:
             "reply_url": lead.reply_url,
             "replied_at": lead.replied_at.isoformat() if lead.replied_at else None,
             "reply_content": lead.reply_content,
+            "profile_url": profile_url,
             "intent_score": lead.intent_score,
             "intent_tags": lead.intent_tags,
             "intent_reason": lead.intent_reason,
