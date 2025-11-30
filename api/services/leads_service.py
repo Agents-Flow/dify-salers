@@ -137,6 +137,85 @@ class LeadTaskService:
         return True
 
     @staticmethod
+    def update_task(
+        tenant_id: str,
+        task_id: str,
+        name: str | None = None,
+        config: dict | None = None,
+    ) -> dict[str, Any] | None:
+        """
+        Update task name and/or configuration.
+
+        Args:
+            tenant_id: The tenant ID
+            task_id: Task ID to update
+            name: New task name (optional)
+            config: New task configuration (optional)
+
+        Returns:
+            Updated task as dictionary, or None if not found
+        """
+        task = db.session.query(LeadTask).filter_by(id=task_id, tenant_id=tenant_id).first()
+
+        if not task:
+            return None
+
+        # Only allow editing pending or failed tasks
+        if task.status not in (LeadTaskStatus.PENDING, LeadTaskStatus.FAILED, LeadTaskStatus.COMPLETED):
+            return None
+
+        if name is not None:
+            task.name = name
+        if config is not None:
+            task.config = config
+
+        db.session.commit()
+        logger.info("Updated lead task: %s", task_id)
+        return LeadTaskService._task_to_dict(task)
+
+    @staticmethod
+    def restart_task(tenant_id: str, task_id: str, clear_leads: bool = False) -> bool:
+        """
+        Restart a completed or failed task.
+
+        Args:
+            tenant_id: The tenant ID
+            task_id: Task ID to restart
+            clear_leads: If True, delete existing leads before restarting
+
+        Returns:
+            True if task was restarted, False otherwise
+        """
+        task = db.session.query(LeadTask).filter_by(id=task_id, tenant_id=tenant_id).first()
+
+        if not task:
+            return False
+
+        # Only allow restarting completed or failed tasks
+        if task.status not in (LeadTaskStatus.COMPLETED, LeadTaskStatus.FAILED):
+            return False
+
+        # Optionally clear existing leads
+        if clear_leads:
+            deleted_count = db.session.query(Lead).filter_by(task_id=task_id).delete()
+            logger.info("Cleared %s leads for task: %s", deleted_count, task_id)
+            task.total_leads = 0
+
+        # Reset task status
+        task.status = LeadTaskStatus.RUNNING
+        task.error_message = None
+        task.result_summary = None
+        db.session.commit()
+
+        # Trigger async task
+        from tasks.lead_crawl_task import crawl_lead_task
+
+        crawl_lead_task.delay(task_id)
+
+        logger.info("Restarted lead task: %s (clear_leads=%s)", task_id, clear_leads)
+        return True
+
+    @staticmethod
     def delete_task(tenant_id: str, task_id: str) -> bool:
         """Delete a task and its associated leads."""
         task = db.session.query(LeadTask).filter_by(id=task_id, tenant_id=tenant_id).first()

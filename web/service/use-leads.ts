@@ -107,6 +107,16 @@ export type UpdateLeadData = {
   intent_tags?: string[]
 }
 
+export type UpdateLeadTaskData = {
+  name?: string
+  config?: {
+    video_urls?: string[]
+    keywords?: string[]
+    city?: string
+    max_comments?: number
+  }
+}
+
 // ===== Lead Hooks =====
 
 export const useLeadList = (params: LeadListParams = {}) => {
@@ -180,6 +190,40 @@ export const useRunLeadTask = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'tasks'] })
     },
+  })
+}
+
+export const useUpdateLeadTask = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string } & UpdateLeadTaskData) =>
+      patch<LeadTask>(`/lead-tasks/${id}`, { body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'tasks'] })
+    },
+  })
+}
+
+export const useRestartLeadTask = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ taskId, clearLeads = false }: { taskId: string; clearLeads?: boolean }) =>
+      post<{ result: string; message: string }>(`/lead-tasks/${taskId}/restart`, {
+        body: { clear_leads: clearLeads },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'tasks'] })
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'list'] })
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'stats'] })
+    },
+  })
+}
+
+export const useTaskLeads = (taskId: string, params: { page?: number; limit?: number } = {}, enabled = true) => {
+  return useQuery<LeadListResponse>({
+    queryKey: [NAME_SPACE, 'task-leads', taskId, params],
+    queryFn: () => get<LeadListResponse>(`/lead-tasks/${taskId}/leads`, { params }),
+    enabled: enabled && !!taskId,
   })
 }
 

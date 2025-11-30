@@ -143,6 +143,37 @@ class LeadTaskApi(Resource):
             raise NotFound("Task not found")
         return task, 200
 
+    @console_ns.doc("update_lead_task")
+    @console_ns.doc(description="Update a lead task")
+    @console_ns.doc(params={"task_id": "Task ID"})
+    @console_ns.expect(
+        console_ns.model(
+            "UpdateLeadTaskRequest",
+            {
+                "name": fields.String(description="Task name"),
+                "config": fields.Nested(lead_task_config_model, description="Task configuration"),
+            },
+        )
+    )
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def patch(self, task_id):
+        """Update task name and/or configuration."""
+        _, tenant_id = current_account_with_tenant()
+        data = request.get_json() or {}
+
+        task = LeadTaskService.update_task(
+            tenant_id=tenant_id,
+            task_id=str(task_id),
+            name=data.get("name"),
+            config=data.get("config"),
+        )
+
+        if not task:
+            return {"error": "Task not found or cannot be edited"}, 400
+        return task, 200
+
     @console_ns.doc("delete_lead_task")
     @console_ns.doc(description="Delete a lead task")
     @console_ns.doc(params={"task_id": "Task ID"})
@@ -177,6 +208,74 @@ class LeadTaskRunApi(Resource):
         if not success:
             return {"error": "Task not found or cannot be started"}, 400
         return {"result": "success", "message": "Task started"}, 200
+
+
+@console_ns.route("/lead-tasks/<uuid:task_id>/restart")
+class LeadTaskRestartApi(Resource):
+    """Lead task restart endpoint."""
+
+    @console_ns.doc("restart_lead_task")
+    @console_ns.doc(description="Restart a completed or failed task")
+    @console_ns.doc(params={"task_id": "Task ID"})
+    @console_ns.expect(
+        console_ns.model(
+            "RestartLeadTaskRequest",
+            {
+                "clear_leads": fields.Boolean(description="Clear existing leads before restart", default=False),
+            },
+        )
+    )
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self, task_id):
+        """Restart a completed or failed task."""
+        _, tenant_id = current_account_with_tenant()
+        data = request.get_json() or {}
+        clear_leads = data.get("clear_leads", False)
+
+        success = LeadTaskService.restart_task(tenant_id, str(task_id), clear_leads=clear_leads)
+
+        if not success:
+            return {"error": "Task not found or cannot be restarted"}, 400
+        return {"result": "success", "message": "Task restarted"}, 200
+
+
+@console_ns.route("/lead-tasks/<uuid:task_id>/leads")
+class LeadTaskLeadsApi(Resource):
+    """Get leads for a specific task."""
+
+    @console_ns.doc("get_task_leads")
+    @console_ns.doc(description="Get all leads collected by a task")
+    @console_ns.doc(
+        params={
+            "task_id": "Task ID",
+            "page": "Page number (default: 1)",
+            "limit": "Items per page (default: 50)",
+        }
+    )
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self, task_id):
+        """Get paginated list of leads for a task."""
+        _, tenant_id = current_account_with_tenant()
+
+        # Verify task exists and belongs to tenant
+        task = LeadTaskService.get_task(tenant_id, str(task_id))
+        if not task:
+            raise NotFound("Task not found")
+
+        page = request.args.get("page", 1, type=int)
+        limit = request.args.get("limit", 50, type=int)
+
+        result = LeadService.get_leads(
+            tenant_id=tenant_id,
+            page=page,
+            limit=limit,
+            task_id=str(task_id),
+        )
+        return result, 200
 
 
 # === Lead APIs ===

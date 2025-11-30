@@ -9,9 +9,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   RiAddLine,
+  RiArrowLeftLine,
   RiDeleteBinLine,
+  RiEdit2Line,
+  RiEyeLine,
   RiPlayLine,
   RiRefreshLine,
+  RiRestartLine,
 } from '@remixicon/react'
 import {
   getIntentColor,
@@ -20,10 +24,13 @@ import {
   useLeadList,
   useLeadStats,
   useLeadTaskList,
+  useRestartLeadTask,
   useRunLeadTask,
+  useTaskLeads,
   useUpdateLead,
+  useUpdateLeadTask,
 } from '@/service/use-leads'
-import type { CreateLeadTaskData, Lead, LeadTask } from '@/service/use-leads'
+import type { CreateLeadTaskData, Lead, LeadTask, UpdateLeadTaskData } from '@/service/use-leads'
 import { useAppContext } from '@/context/app-context'
 
 // Status color utilities
@@ -57,19 +64,33 @@ import Loading from '@/app/components/base/loading'
 import Confirm from '@/app/components/base/confirm'
 import Pagination from '@/app/components/base/pagination'
 
-// Create Task Form Component
-type CreateTaskFormProps = {
+// Task Form Component (Create/Edit)
+type TaskFormPropsCreate = {
   onSubmit: (data: CreateLeadTaskData) => void
   onCancel: () => void
   isLoading: boolean
+  initialData?: undefined
+  mode: 'create'
 }
 
-const CreateTaskForm: FC<CreateTaskFormProps> = ({ onSubmit, onCancel, isLoading }) => {
+type TaskFormPropsEdit = {
+  onSubmit: (data: UpdateLeadTaskData) => void
+  onCancel: () => void
+  isLoading: boolean
+  initialData: LeadTask
+  mode: 'edit'
+}
+
+type TaskFormProps = TaskFormPropsCreate | TaskFormPropsEdit
+
+const TaskForm: FC<TaskFormProps> = (props) => {
+  const { onCancel, isLoading, mode } = props
+  const initialData = mode === 'edit' ? props.initialData : undefined
   const { t } = useTranslation()
-  const [name, setName] = useState('')
-  const [videoUrl, setVideoUrl] = useState('')
-  const [keywords, setKeywords] = useState('')
-  const [city, setCity] = useState('')
+  const [name, setName] = useState(initialData?.name || '')
+  const [videoUrl, setVideoUrl] = useState(initialData?.config?.video_urls?.[0] || '')
+  const [keywords, setKeywords] = useState(initialData?.config?.keywords?.join(', ') || '')
+  const [city, setCity] = useState(initialData?.config?.city || '')
 
   const handleSubmit = () => {
     if (!name.trim()) {
@@ -80,16 +101,29 @@ const CreateTaskForm: FC<CreateTaskFormProps> = ({ onSubmit, onCancel, isLoading
     const videoUrls = videoUrl.trim() ? [videoUrl.trim()] : []
     const keywordList = keywords.trim() ? keywords.split(',').map(k => k.trim()).filter(Boolean) : []
 
-    onSubmit({
-      name: name.trim(),
-      task_type: 'comment_crawl',
-      config: {
-        video_urls: videoUrls,
-        keywords: keywordList,
-        city: city.trim() || undefined,
-        max_comments: 500,
-      },
-    })
+    if (mode === 'create') {
+      (props as TaskFormPropsCreate).onSubmit({
+        name: name.trim(),
+        task_type: 'comment_crawl',
+        config: {
+          video_urls: videoUrls,
+          keywords: keywordList,
+          city: city.trim() || undefined,
+          max_comments: 500,
+        },
+      })
+    }
+    else {
+      (props as TaskFormPropsEdit).onSubmit({
+        name: name.trim(),
+        config: {
+          video_urls: videoUrls,
+          keywords: keywordList,
+          city: city.trim() || undefined,
+          max_comments: initialData?.config?.max_comments || 500,
+        },
+      })
+    }
   }
 
   return (
@@ -144,9 +178,201 @@ const CreateTaskForm: FC<CreateTaskFormProps> = ({ onSubmit, onCancel, isLoading
           disabled={!name.trim()}
           loading={isLoading}
         >
-          {t('leads.createTask.submit')}
+          {mode === 'create' ? t('leads.createTask.submit') : t('leads.editTask.save')}
         </Button>
       </div>
+    </div>
+  )
+}
+
+// Task Detail View Component
+type TaskDetailViewProps = {
+  task: LeadTask
+  onBack: () => void
+  onEdit: () => void
+  onRestart: (clearLeads: boolean) => void
+  isRestarting: boolean
+}
+
+const TaskDetailView: FC<TaskDetailViewProps> = ({ task, onBack, onEdit, onRestart, isRestarting }) => {
+  const { t } = useTranslation()
+  const [page, setPage] = useState(1)
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false)
+  const [clearLeadsOnRestart, setClearLeadsOnRestart] = useState(false)
+
+  const { data: leadsData, isLoading } = useTaskLeads(task.id, { page, limit: 20 })
+
+  const canEdit = task.status !== 'running'
+  const canRestart = task.status === 'completed' || task.status === 'failed'
+
+  return (
+    <div className='space-y-6'>
+      {/* Header */}
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-3'>
+          <Button variant='ghost' size='small' onClick={onBack}>
+            <RiArrowLeftLine className='h-4 w-4' />
+          </Button>
+          <h2 className='text-lg font-semibold text-text-primary'>{task.name}</h2>
+          <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getTaskStatusClassName(task.status)}`}>
+            {t(`leads.taskStatus.${task.status}`)}
+          </span>
+        </div>
+        <div className='flex items-center gap-2'>
+          {canEdit && (
+            <Button variant='secondary' size='small' onClick={onEdit}>
+              <RiEdit2Line className='mr-1 h-3 w-3' />
+              {t('leads.task.edit')}
+            </Button>
+          )}
+          {canRestart && (
+            <Button
+              variant='primary'
+              size='small'
+              onClick={() => setShowRestartConfirm(true)}
+              loading={isRestarting}
+            >
+              <RiRestartLine className='mr-1 h-3 w-3' />
+              {t('leads.task.restart')}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Task Info */}
+      <div className='grid grid-cols-2 gap-4 rounded-lg border border-divider-subtle bg-components-panel-bg p-4 md:grid-cols-4'>
+        <div>
+          <div className='text-xs text-text-tertiary'>{t('leads.task.platform')}</div>
+          <div className='text-sm text-text-secondary'>{task.platform}</div>
+        </div>
+        <div>
+          <div className='text-xs text-text-tertiary'>{t('leads.task.type')}</div>
+          <div className='text-sm text-text-secondary'>{t(`leads.taskType.${task.task_type}`)}</div>
+        </div>
+        <div>
+          <div className='text-xs text-text-tertiary'>{t('leads.task.totalLeads')}</div>
+          <div className='text-sm font-medium text-text-secondary'>{task.total_leads}</div>
+        </div>
+        <div>
+          <div className='text-xs text-text-tertiary'>{t('leads.task.createdAt')}</div>
+          <div className='text-sm text-text-secondary'>{task.created_at ? new Date(task.created_at).toLocaleString() : '-'}</div>
+        </div>
+      </div>
+
+      {/* Config Info */}
+      <div className='rounded-lg border border-divider-subtle bg-components-panel-bg p-4'>
+        <div className='mb-2 text-sm font-medium text-text-secondary'>{t('leads.task.config')}</div>
+        <div className='space-y-2 text-sm text-text-tertiary'>
+          {task.config?.video_urls?.length ? (
+            <div>{t('leads.createTask.videoUrl')}: {task.config.video_urls.join(', ')}</div>
+          ) : null}
+          {task.config?.keywords?.length ? (
+            <div>{t('leads.createTask.keywords')}: {task.config.keywords.join(', ')}</div>
+          ) : null}
+          {task.config?.city ? (
+            <div>{t('leads.createTask.city')}: {task.config.city}</div>
+          ) : null}
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {task.error_message && (
+        <div className='rounded-lg border border-util-colors-red-red-200 bg-util-colors-red-red-50 p-4'>
+          <div className='text-sm font-medium text-util-colors-red-red-600'>{t('leads.task.error')}</div>
+          <div className='mt-1 text-sm text-util-colors-red-red-600'>{task.error_message}</div>
+        </div>
+      )}
+
+      {/* Leads List */}
+      <div>
+        <h3 className='mb-3 text-sm font-medium text-text-secondary'>{t('leads.task.collectedLeads')}</h3>
+        {isLoading
+          ? (
+            <div className='flex h-[200px] items-center justify-center'>
+              <Loading type='area' />
+            </div>
+          )
+          : (
+            <>
+              <div className='rounded-xl border border-divider-subtle bg-components-panel-bg'>
+                <table className='w-full'>
+                  <thead>
+                    <tr className='border-b border-divider-subtle'>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.nickname')}</th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.comment')}</th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.region')}</th>
+                      <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.intentScore')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leadsData?.data?.map((lead: Lead) => (
+                      <tr key={lead.id} className='border-b border-divider-subtle last:border-0'>
+                        <td className='px-4 py-3 text-sm text-text-secondary'>{lead.nickname || '-'}</td>
+                        <td className='max-w-[400px] truncate px-4 py-3 text-sm text-text-secondary' title={lead.comment_content || ''}>
+                          {lead.comment_content || '-'}
+                        </td>
+                        <td className='px-4 py-3 text-sm text-text-tertiary'>{lead.region || '-'}</td>
+                        <td className='px-4 py-3'>
+                          <span className={`text-sm ${getIntentColor(lead.intent_score)}`}>{lead.intent_score}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {(!leadsData?.data || leadsData.data.length === 0) && (
+                  <div className='py-8 text-center text-text-tertiary'>
+                    {t('leads.empty.taskLeads')}
+                  </div>
+                )}
+              </div>
+              {leadsData && leadsData.total > 20 && (
+                <Pagination
+                  className='mt-4'
+                  current={page - 1}
+                  onChange={p => setPage(p + 1)}
+                  total={leadsData.total}
+                  limit={20}
+                />
+              )}
+            </>
+          )}
+      </div>
+
+      {/* Restart Confirmation */}
+      <Modal
+        isShow={showRestartConfirm}
+        onClose={() => setShowRestartConfirm(false)}
+        title={t('leads.confirm.restartTask')}
+        className='!max-w-[400px]'
+      >
+        <div className='p-6'>
+          <p className='mb-4 text-text-secondary'>{t('leads.confirm.restartTaskDescription')}</p>
+          <label className='flex items-center gap-2 text-sm text-text-secondary'>
+            <input
+              type='checkbox'
+              checked={clearLeadsOnRestart}
+              onChange={e => setClearLeadsOnRestart(e.target.checked)}
+              className='rounded border-divider-regular'
+            />
+            {t('leads.confirm.clearLeadsOnRestart')}
+          </label>
+          <div className='mt-6 flex justify-end gap-2'>
+            <Button variant='secondary' onClick={() => setShowRestartConfirm(false)}>
+              {t('common.operation.cancel')}
+            </Button>
+            <Button
+              variant='primary'
+              onClick={() => {
+                onRestart(clearLeadsOnRestart)
+                setShowRestartConfirm(false)
+              }}
+              loading={isRestarting}
+            >
+              {t('leads.task.restart')}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
@@ -162,7 +388,10 @@ const LeadsPage: FC = () => {
   const [page, setPage] = useState(0)
   const [searchKeyword, setSearchKeyword] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
+  const [taskToEdit, setTaskToEdit] = useState<LeadTask | null>(null)
+  const [selectedTask, setSelectedTask] = useState<LeadTask | null>(null)
   const [hasRunningTasks, setHasRunningTasks] = useState(false)
 
   // Data fetching
@@ -190,6 +419,8 @@ const LeadsPage: FC = () => {
   const createTask = useCreateLeadTask()
   const runTask = useRunLeadTask()
   const deleteTask = useDeleteLeadTask()
+  const updateTask = useUpdateLeadTask()
+  const restartTask = useRestartLeadTask()
   const updateLead = useUpdateLead()
 
   const tabs = [
@@ -240,6 +471,37 @@ const LeadsPage: FC = () => {
       Toast.notify({ type: 'error', message: t('leads.message.updateFailed') })
     }
   }, [updateLead, t])
+
+  const handleEditTask = useCallback(async (data: UpdateLeadTaskData) => {
+    if (!taskToEdit)
+      return
+    try {
+      await updateTask.mutateAsync({ id: taskToEdit.id, ...data })
+      Toast.notify({ type: 'success', message: t('leads.message.taskUpdated') })
+      setShowEditModal(false)
+      setTaskToEdit(null)
+    }
+    catch {
+      Toast.notify({ type: 'error', message: t('leads.message.updateFailed') })
+    }
+  }, [updateTask, taskToEdit, t])
+
+  const handleRestartTask = useCallback(async (clearLeads: boolean) => {
+    if (!selectedTask)
+      return
+    try {
+      await restartTask.mutateAsync({ taskId: selectedTask.id, clearLeads })
+      Toast.notify({ type: 'success', message: t('leads.message.taskRestarted') })
+    }
+    catch {
+      Toast.notify({ type: 'error', message: t('leads.message.restartFailed') })
+    }
+  }, [restartTask, selectedTask, t])
+
+  const openEditModal = useCallback((task: LeadTask) => {
+    setTaskToEdit(task)
+    setShowEditModal(true)
+  }, [])
 
   return (
     <div className='relative flex h-0 shrink-0 grow flex-col overflow-y-auto bg-background-body'>
@@ -391,77 +653,117 @@ const LeadsPage: FC = () => {
 
         {activeTab === 'tasks' && (
           <>
-            {tasksLoading
+            {selectedTask
               ? (
-                <div className='flex h-[200px] items-center justify-center'>
-                  <Loading type='area' />
-                </div>
+                <TaskDetailView
+                  task={selectedTask}
+                  onBack={() => setSelectedTask(null)}
+                  onEdit={() => openEditModal(selectedTask)}
+                  onRestart={handleRestartTask}
+                  isRestarting={restartTask.isPending}
+                />
               )
-              : (
-                <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
-                  {tasksData?.data?.map((task: LeadTask) => (
-                    <div
-                      key={task.id}
-                      className='rounded-xl border border-divider-subtle bg-components-panel-bg p-4 transition-shadow hover:shadow-sm'
-                    >
-                      <div className='mb-3 flex items-center justify-between'>
-                        <h3 className='font-medium text-text-secondary'>{task.name}</h3>
-                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getTaskStatusClassName(task.status)}`}>
-                          {t(`leads.taskStatus.${task.status}`)}
-                        </span>
-                      </div>
-                      <div className='mb-2 text-sm text-text-tertiary'>
-                        {t(`leads.taskType.${task.task_type}`)} · {task.platform}
-                      </div>
-                      <div className='mb-4 text-sm text-text-quaternary'>
-                        {t('leads.task.totalLeads')}: {task.total_leads}
-                      </div>
-                      {task.error_message && (
-                        <div className='mb-4 text-sm text-util-colors-red-red-600'>
-                          {task.error_message}
+              : tasksLoading
+                ? (
+                  <div className='flex h-[200px] items-center justify-center'>
+                    <Loading type='area' />
+                  </div>
+                )
+                : (
+                  <div className='grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'>
+                    {tasksData?.data?.map((task: LeadTask) => (
+                      <div
+                        key={task.id}
+                        className='rounded-xl border border-divider-subtle bg-components-panel-bg p-4 transition-shadow hover:shadow-sm'
+                      >
+                        <div className='mb-3 flex items-center justify-between'>
+                          <h3 className='font-medium text-text-secondary'>{task.name}</h3>
+                          <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getTaskStatusClassName(task.status)}`}>
+                            {t(`leads.taskStatus.${task.status}`)}
+                          </span>
                         </div>
-                      )}
-                      <div className='flex gap-2'>
-                        {(task.status === 'pending' || task.status === 'failed') && (
-                          <Button
-                            variant='primary'
-                            size='small'
-                            onClick={() => handleRunTask(task.id)}
-                            loading={runTask.isPending}
-                          >
-                            <RiPlayLine className='mr-1 h-3 w-3' />
-                            {t('leads.task.run')}
-                          </Button>
+                        <div className='mb-2 text-sm text-text-tertiary'>
+                          {t(`leads.taskType.${task.task_type}`)} · {task.platform}
+                        </div>
+                        <div className='mb-4 text-sm text-text-quaternary'>
+                          {t('leads.task.totalLeads')}: {task.total_leads}
+                        </div>
+                        {task.error_message && (
+                          <div className='mb-4 truncate text-sm text-util-colors-red-red-600' title={task.error_message}>
+                            {task.error_message}
+                          </div>
                         )}
-                        {task.status === 'running' && (
+                        <div className='flex flex-wrap gap-2'>
+                          {(task.status === 'pending' || task.status === 'failed') && (
+                            <Button
+                              variant='primary'
+                              size='small'
+                              onClick={() => handleRunTask(task.id)}
+                              loading={runTask.isPending}
+                            >
+                              <RiPlayLine className='mr-1 h-3 w-3' />
+                              {t('leads.task.run')}
+                            </Button>
+                          )}
+                          {task.status === 'running' && (
+                            <Button
+                              variant='secondary'
+                              size='small'
+                              disabled
+                            >
+                              <RiRefreshLine className='mr-1 h-3 w-3 animate-spin' />
+                              {t('leads.taskStatus.running')}
+                            </Button>
+                          )}
+                          {(task.status === 'completed' || task.status === 'failed') && (
+                            <Button
+                              variant='secondary'
+                              size='small'
+                              onClick={() => restartTask.mutate({ taskId: task.id, clearLeads: false })}
+                              loading={restartTask.isPending}
+                            >
+                              <RiRestartLine className='mr-1 h-3 w-3' />
+                              {t('leads.task.restart')}
+                            </Button>
+                          )}
                           <Button
-                            variant='secondary'
+                            variant='ghost'
                             size='small'
-                            disabled
+                            onClick={() => setSelectedTask(task)}
+                            title={t('leads.task.viewDetails')}
                           >
-                            <RiRefreshLine className='mr-1 h-3 w-3 animate-spin' />
-                            {t('leads.taskStatus.running')}
+                            <RiEyeLine className='h-3 w-3' />
                           </Button>
-                        )}
-                        <Button
-                          variant='ghost'
-                          size='small'
-                          onClick={() => setTaskToDelete(task.id)}
-                        >
-                          <RiDeleteBinLine className='h-3 w-3' />
-                        </Button>
+                          {task.status !== 'running' && (
+                            <Button
+                              variant='ghost'
+                              size='small'
+                              onClick={() => openEditModal(task)}
+                              title={t('leads.task.edit')}
+                            >
+                              <RiEdit2Line className='h-3 w-3' />
+                            </Button>
+                          )}
+                          <Button
+                            variant='ghost'
+                            size='small'
+                            onClick={() => setTaskToDelete(task.id)}
+                            title={t('common.operation.delete')}
+                          >
+                            <RiDeleteBinLine className='h-3 w-3' />
+                          </Button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  {(!tasksData?.data || tasksData.data.length === 0) && (
-                    <div className='col-span-full py-12 text-center'>
-                      <p className='text-text-tertiary'>{t('leads.empty.tasks')}</p>
-                      <p className='mt-1 text-sm text-text-quaternary'>{t('leads.empty.tasksDescription')}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+                    {(!tasksData?.data || tasksData.data.length === 0) && (
+                      <div className='col-span-full py-12 text-center'>
+                        <p className='text-text-tertiary'>{t('leads.empty.tasks')}</p>
+                        <p className='mt-1 text-sm text-text-quaternary'>{t('leads.empty.tasksDescription')}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
           </>
         )}
       </div>
@@ -473,11 +775,36 @@ const LeadsPage: FC = () => {
         title={t('leads.createTask.title')}
         className='!max-w-[480px]'
       >
-        <CreateTaskForm
+        <TaskForm
+          mode='create'
           onSubmit={handleCreateTask}
           onCancel={() => setShowCreateModal(false)}
           isLoading={createTask.isPending}
         />
+      </Modal>
+
+      {/* Edit Task Modal */}
+      <Modal
+        isShow={showEditModal}
+        onClose={() => {
+          setShowEditModal(false)
+          setTaskToEdit(null)
+        }}
+        title={t('leads.editTask.title')}
+        className='!max-w-[480px]'
+      >
+        {taskToEdit && (
+          <TaskForm
+            mode='edit'
+            initialData={taskToEdit}
+            onSubmit={handleEditTask}
+            onCancel={() => {
+              setShowEditModal(false)
+              setTaskToEdit(null)
+            }}
+            isLoading={updateTask.isPending}
+          />
+        )}
       </Modal>
 
       {/* Delete Confirmation */}
