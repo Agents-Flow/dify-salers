@@ -34,6 +34,7 @@ const NAMESPACES = [
   'education',
   'explore',
   'layout',
+  'leads',
   'login',
   'oauth',
   'pipeline',

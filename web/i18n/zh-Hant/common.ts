@@ -160,6 +160,7 @@ const translation = {
     newApp: '建立應用',
     newDataset: '建立知識庫',
     tools: '工具',
+    leads: '獲客',
     exploreMarketplace: '探索 Marketplace',
   },
   userProfile: {

@@ -34,6 +34,12 @@ from .enums import (
     WorkflowRunTriggeredFrom,
     WorkflowTriggerStatus,
 )
+from .leads import (
+    Lead,
+    LeadStatus,
+    LeadTask,
+    LeadTaskStatus,
+)
 from .model import (
     ApiRequest,
     ApiToken,
@@ -154,6 +160,10 @@ __all__ = [
     "IconType",
     "InstalledApp",
     "InvitationCode",
+    "Lead",
+    "LeadStatus",
+    "LeadTask",
+    "LeadTaskStatus",
     "LoadBalancingModelConfig",
     "Message",
     "MessageAgentThought",

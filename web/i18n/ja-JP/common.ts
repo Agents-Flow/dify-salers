@@ -170,6 +170,7 @@ const translation = {
     newApp: '新しいアプリ',
     newDataset: 'ナレッジの作成',
     tools: 'ツール',
+    leads: 'リード',
     exploreMarketplace: 'マーケットプレイスを探索する',
   },
   userProfile: {
