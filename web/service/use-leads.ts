@@ -82,6 +82,7 @@ export type LeadListParams = {
   min_intent?: number
   task_id?: string
   keyword?: string
+  platform?: string
 }
 
 export type LeadTaskListParams = {

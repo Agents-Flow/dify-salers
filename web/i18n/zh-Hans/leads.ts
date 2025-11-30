@@ -25,6 +25,8 @@ const translation = {
     markContacted: '标记已联系',
     markConverted: '标记已转化',
     markInvalid: '标记无效',
+    videoUrl: '视频链接',
+    viewVideo: '查看视频',
   },
   status: {
     new: '新客户',
@@ -109,6 +111,8 @@ const translation = {
     status: '状态',
     minIntent: '最低意向度',
     all: '全部',
+    allTasks: '全部任务',
+    allPlatforms: '全部平台',
   },
   message: {
     taskCreated: '任务创建成功',

@@ -422,6 +422,8 @@ const LeadsPage: FC = () => {
   const [activeTab, setActiveTab] = useState<string>('leads')
   const [page, setPage] = useState(0)
   const [searchKeyword, setSearchKeyword] = useState('')
+  const [taskFilter, setTaskFilter] = useState<string>('')
+  const [platformFilter, setPlatformFilter] = useState<string>('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
@@ -434,6 +436,8 @@ const LeadsPage: FC = () => {
     page: page + 1,
     limit: 20,
     keyword: searchKeyword || undefined,
+    task_id: taskFilter || undefined,
+    platform: platformFilter || undefined,
   })
   const { data: tasksData, isLoading: tasksLoading } = useLeadTaskList({
     page: 1,
@@ -563,6 +567,36 @@ const LeadsPage: FC = () => {
         <div className='flex items-center gap-2'>
           {activeTab === 'leads' && (
             <>
+              <select
+                value={taskFilter}
+                onChange={(e) => {
+                  setTaskFilter(e.target.value)
+                  setPage(0)
+                }}
+                className='h-9 rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-3 text-sm text-text-secondary focus:border-components-input-border-active focus:outline-none'
+              >
+                <option value=''>{t('leads.filter.allTasks')}</option>
+                {tasksData?.data?.map(task => (
+                  <option key={task.id} value={task.id}>
+                    {task.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={platformFilter}
+                onChange={(e) => {
+                  setPlatformFilter(e.target.value)
+                  setPage(0)
+                }}
+                className='h-9 rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-3 text-sm text-text-secondary focus:border-components-input-border-active focus:outline-none'
+              >
+                <option value=''>{t('leads.filter.allPlatforms')}</option>
+                <option value='douyin'>{t('leads.platform.douyin')}</option>
+                <option value='xiaohongshu'>{t('leads.platform.xiaohongshu')}</option>
+                <option value='kuaishou'>{t('leads.platform.kuaishou')}</option>
+                <option value='bilibili'>{t('leads.platform.bilibili')}</option>
+                <option value='weibo'>{t('leads.platform.weibo')}</option>
+              </select>
               <Input
                 showLeftIcon
                 showClearIcon
@@ -604,13 +638,15 @@ const LeadsPage: FC = () => {
               )
               : (
                 <>
-                  <div className='rounded-xl border border-divider-subtle bg-components-panel-bg'>
-                    <table className='w-full'>
+                  <div className='overflow-x-auto rounded-xl border border-divider-subtle bg-components-panel-bg'>
+                    <table className='w-full min-w-[1000px]'>
                       <thead>
                         <tr className='border-b border-divider-subtle'>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.nickname')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.comment')}</th>
-                          <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.source')}</th>
+                          <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.task.platform')}</th>
+                          <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.videoUrl')}</th>
+                          <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.region')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.intentScore')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.status')}</th>
                           <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.lead.actions')}</th>
@@ -620,12 +656,30 @@ const LeadsPage: FC = () => {
                         {leadsData?.data?.map((lead: Lead) => (
                           <tr key={lead.id} className='border-b border-divider-subtle last:border-0 hover:bg-background-default-hover'>
                             <td className='px-4 py-3 text-sm text-text-secondary'>{lead.nickname || '-'}</td>
-                            <td className='max-w-[300px] truncate px-4 py-3 text-sm text-text-secondary' title={lead.comment_content || ''}>
+                            <td className='max-w-[250px] truncate px-4 py-3 text-sm text-text-secondary' title={lead.comment_content || ''}>
                               {lead.comment_content || '-'}
                             </td>
-                            <td className='max-w-[200px] truncate px-4 py-3 text-sm text-text-tertiary' title={lead.source_video_title || ''}>
-                              {lead.source_video_title || '-'}
+                            <td className='px-4 py-3 text-sm text-text-tertiary'>
+                              <span className='inline-flex items-center rounded-md bg-util-colors-blue-blue-50 px-2 py-1 text-xs font-medium text-util-colors-blue-blue-600'>
+                                {t(`leads.platform.${lead.platform}`) || lead.platform}
+                              </span>
                             </td>
+                            <td className='max-w-[180px] truncate px-4 py-3 text-sm text-text-tertiary'>
+                              {lead.source_video_url
+                                ? (
+                                  <a
+                                    href={lead.source_video_url}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                    className='text-util-colors-blue-blue-600 hover:underline'
+                                    title={lead.source_video_url}
+                                  >
+                                    {lead.source_video_title || t('leads.lead.viewVideo')}
+                                  </a>
+                                )
+                                : '-'}
+                            </td>
+                            <td className='px-4 py-3 text-sm text-text-tertiary'>{lead.region || '-'}</td>
                             <td className='px-4 py-3'>
                               <div className='flex items-center gap-2'>
                                 <div className={`h-2 w-2 rounded-full ${lead.intent_score >= 70 ? 'bg-util-colors-green-green-500' : lead.intent_score >= 40 ? 'bg-util-colors-orange-orange-500' : 'bg-util-colors-gray-gray-500'}`} />

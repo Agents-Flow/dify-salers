@@ -308,6 +308,7 @@ class LeadService:
         min_intent: int | None = None,
         task_id: str | None = None,
         keyword: str | None = None,
+        platform: str | None = None,
     ) -> dict[str, Any]:
         """
         Get paginated list of leads.
@@ -320,6 +321,7 @@ class LeadService:
             min_intent: Minimum intent score filter
             task_id: Optional task ID filter
             keyword: Optional keyword search
+            platform: Optional platform filter
 
         Returns:
             Dictionary with data, total, page, and has_more
@@ -333,6 +335,8 @@ class LeadService:
                 query = query.where(Lead.intent_score >= min_intent)
             if task_id:
                 query = query.where(Lead.task_id == task_id)
+            if platform:
+                query = query.where(Lead.platform == platform)
             if keyword:
                 query = query.where(Lead.nickname.ilike(f"%{keyword}%") | Lead.comment_content.ilike(f"%{keyword}%"))
 

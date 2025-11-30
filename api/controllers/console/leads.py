@@ -322,6 +322,7 @@ class LeadListApi(Resource):
             "min_intent": "Minimum intent score filter",
             "task_id": "Filter by task ID",
             "keyword": "Search keyword",
+            "platform": "Filter by platform (douyin/xiaohongshu/kuaishou/bilibili/weibo)",
         }
     )
     @setup_required
@@ -337,6 +338,7 @@ class LeadListApi(Resource):
         min_intent = request.args.get("min_intent", type=int)
         task_id = request.args.get("task_id", type=str)
         keyword = request.args.get("keyword", type=str)
+        platform = request.args.get("platform", type=str)
 
         result = LeadService.get_leads(
             tenant_id=tenant_id,
@@ -346,6 +348,7 @@ class LeadListApi(Resource):
             min_intent=min_intent,
             task_id=task_id,
             keyword=keyword,
+            platform=platform,
         )
         return result, 200
 

@@ -25,6 +25,8 @@ const translation = {
     markContacted: 'Mark as Contacted',
     markConverted: 'Mark as Converted',
     markInvalid: 'Mark as Invalid',
+    videoUrl: 'Video Link',
+    viewVideo: 'View Video',
   },
   status: {
     new: 'New',
@@ -109,6 +111,8 @@ const translation = {
     status: 'Status',
     minIntent: 'Min Intent',
     all: 'All',
+    allTasks: 'All Tasks',
+    allPlatforms: 'All Platforms',
   },
   message: {
     taskCreated: 'Task created successfully',
