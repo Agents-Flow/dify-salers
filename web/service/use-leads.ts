@@ -145,10 +145,11 @@ export const useUpdateLead = () => {
 
 // ===== Lead Task Hooks =====
 
-export const useLeadTaskList = (params: LeadTaskListParams = {}) => {
+export const useLeadTaskList = (params: LeadTaskListParams = {}, options?: { refetchInterval?: number | false }) => {
   return useQuery<LeadTaskListResponse>({
     queryKey: [NAME_SPACE, 'tasks', params],
     queryFn: () => get<LeadTaskListResponse>('/lead-tasks', { params }),
+    refetchInterval: options?.refetchInterval,
   })
 }
 

@@ -5,7 +5,7 @@
  */
 'use client'
 import type { FC } from 'react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   RiAddLine,
@@ -163,6 +163,7 @@ const LeadsPage: FC = () => {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [taskToDelete, setTaskToDelete] = useState<string | null>(null)
+  const [hasRunningTasks, setHasRunningTasks] = useState(false)
 
   // Data fetching
   const { data: leadsData, isLoading: leadsLoading, refetch: refetchLeads } = useLeadList({
@@ -173,8 +174,17 @@ const LeadsPage: FC = () => {
   const { data: tasksData, isLoading: tasksLoading } = useLeadTaskList({
     page: 1,
     limit: 50,
+  }, {
+    // Auto-refresh every 3 seconds when there are running tasks
+    refetchInterval: hasRunningTasks ? 3000 : false,
   })
   const { data: stats } = useLeadStats()
+
+  // Update hasRunningTasks when tasksData changes
+  useEffect(() => {
+    const running = tasksData?.data?.some(t => t.status === 'running') ?? false
+    setHasRunningTasks(running)
+  }, [tasksData])
 
   // Mutations
   const createTask = useCreateLeadTask()

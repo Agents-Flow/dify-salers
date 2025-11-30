@@ -91,6 +91,7 @@ class DouyinCrawlerService:
         Supports formats:
         - https://www.douyin.com/video/7123456789012345678
         - https://v.douyin.com/abc123/
+        - https://www.douyin.com/jingxuan/search/xxx?modal_id=7123456789
 
         Args:
             url: Douyin video URL
@@ -101,6 +102,12 @@ class DouyinCrawlerService:
         # Standard video URL pattern
         video_pattern = r"douyin\.com/video/(\d+)"
         match = re.search(video_pattern, url)
+        if match:
+            return match.group(1)
+
+        # Modal ID pattern (from search pages)
+        modal_pattern = r"modal_id=(\d+)"
+        match = re.search(modal_pattern, url)
         if match:
             return match.group(1)
 
