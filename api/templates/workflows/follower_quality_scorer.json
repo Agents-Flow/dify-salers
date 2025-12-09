@@ -1,0 +1,96 @@
+{
+  "version": "0.1.3",
+  "kind": "app",
+  "app": {
+    "name": "Follower Quality Scorer",
+    "description": "AI workflow to analyze and score follower profiles for outreach prioritization.",
+    "mode": "workflow",
+    "icon": "📊",
+    "icon_background": "#10B981"
+  },
+  "workflow": {
+    "graph": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "position": {"x": 80, "y": 200},
+          "data": {
+            "title": "Start",
+            "variables": [
+              {"variable": "username", "type": "string", "required": true},
+              {"variable": "bio", "type": "string", "required": false, "default": ""},
+              {"variable": "follower_count", "type": "number", "required": true},
+              {"variable": "following_count", "type": "number", "required": true},
+              {"variable": "post_count", "type": "number", "required": true},
+              {"variable": "is_verified", "type": "boolean", "default": false},
+              {"variable": "is_private", "type": "boolean", "default": false},
+              {"variable": "target_niche", "type": "string", "default": "finance"}
+            ]
+          }
+        },
+        {
+          "id": "calculate_ratios",
+          "type": "code",
+          "position": {"x": 280, "y": 200},
+          "data": {
+            "title": "Calculate Ratios",
+            "code_language": "python3",
+            "code": "def main(follower_count: int, following_count: int, post_count: int) -> dict:\n    # Calculate follower/following ratio\n    ff_ratio = follower_count / max(following_count, 1)\n    \n    # Calculate engagement potential\n    if follower_count > 0:\n        engagement_ratio = post_count / follower_count * 100\n    else:\n        engagement_ratio = 0\n    \n    # Determine account type\n    if ff_ratio > 2:\n        account_type = 'influencer'\n    elif ff_ratio < 0.3:\n        account_type = 'mass_follower'\n    else:\n        account_type = 'normal'\n    \n    return {\n        'ff_ratio': round(ff_ratio, 2),\n        'engagement_ratio': round(engagement_ratio, 2),\n        'account_type': account_type\n    }"
+          }
+        },
+        {
+          "id": "analyze_bio",
+          "type": "llm",
+          "position": {"x": 480, "y": 100},
+          "data": {
+            "title": "Analyze Bio",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "system_prompt": "Analyze this social media bio for a {{target_niche}} follower targeting campaign.\n\nBio: {{bio}}\n\nReturn a JSON with:\n- relevance_score (0-100): How relevant is this person to {{target_niche}}\n- keywords_found (array): Relevant keywords found in bio\n- red_flags (array): Any spam/bot indicators\n- persona_type: 'investor', 'trader', 'enthusiast', 'professional', 'unknown'\n\nOnly output valid JSON, no explanation.",
+            "output_schema": {
+              "type": "object",
+              "properties": {
+                "relevance_score": {"type": "number"},
+                "keywords_found": {"type": "array", "items": {"type": "string"}},
+                "red_flags": {"type": "array", "items": {"type": "string"}},
+                "persona_type": {"type": "string"}
+              }
+            }
+          }
+        },
+        {
+          "id": "calculate_final_score",
+          "type": "code",
+          "position": {"x": 680, "y": 200},
+          "data": {
+            "title": "Calculate Final Score",
+            "code_language": "python3",
+            "code": "def main(ff_ratio: float, account_type: str, is_verified: bool, is_private: bool, relevance_score: int, red_flags: list, post_count: int) -> dict:\n    score = 50  # Base score\n    \n    # Follower/following ratio impact\n    if 0.5 <= ff_ratio <= 3:\n        score += 15  # Good ratio\n    elif ff_ratio > 10:\n        score += 10  # Micro-influencer\n    elif ff_ratio < 0.2:\n        score -= 20  # Mass follower\n    \n    # Activity impact\n    if post_count >= 10:\n        score += 10\n    elif post_count == 0:\n        score -= 15  # Inactive\n    \n    # Verification bonus\n    if is_verified:\n        score += 10\n    \n    # Private account penalty\n    if is_private:\n        score -= 10\n    \n    # Bio relevance\n    score += relevance_score * 0.2\n    \n    # Red flags penalty\n    score -= len(red_flags) * 5\n    \n    # Normalize score\n    score = max(0, min(100, score))\n    \n    # Determine tier\n    if score >= 70:\n        tier = 'high'\n    elif score >= 40:\n        tier = 'medium'\n    else:\n        tier = 'low'\n    \n    return {\n        'quality_score': int(score),\n        'quality_tier': tier,\n        'recommendation': 'priority_outreach' if tier == 'high' else 'standard_outreach' if tier == 'medium' else 'skip'\n    }"
+          }
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "position": {"x": 880, "y": 200},
+          "data": {
+            "title": "Output",
+            "outputs": [
+              {"variable": "quality_score", "type": "number"},
+              {"variable": "quality_tier", "type": "string"},
+              {"variable": "recommendation", "type": "string"},
+              {"variable": "account_type", "type": "string"},
+              {"variable": "relevance_score", "type": "number"},
+              {"variable": "persona_type", "type": "string"}
+            ]
+          }
+        }
+      ],
+      "edges": [
+        {"source": "start", "target": "calculate_ratios"},
+        {"source": "calculate_ratios", "target": "analyze_bio"},
+        {"source": "analyze_bio", "target": "calculate_final_score"},
+        {"source": "calculate_final_score", "target": "end"}
+      ]
+    }
+  }
+}

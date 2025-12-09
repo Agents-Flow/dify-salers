@@ -1,0 +1,125 @@
+{
+  "version": "0.1.3",
+  "kind": "app",
+  "app": {
+    "name": "Social Outreach AI Chatbot",
+    "description": "AI-driven chatbot for social media follower conversion. Handles DM conversations with personalized responses and WhatsApp conversion flow.",
+    "mode": "advanced-chat",
+    "icon": "🤖",
+    "icon_background": "#3B82F6"
+  },
+  "workflow": {
+    "graph": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "position": {"x": 80, "y": 280},
+          "data": {
+            "title": "Start",
+            "variables": [
+              {"variable": "follower_username", "type": "string", "required": true},
+              {"variable": "follower_bio", "type": "string", "required": false},
+              {"variable": "platform", "type": "string", "default": "instagram"},
+              {"variable": "kol_name", "type": "string", "required": true},
+              {"variable": "assistant_name", "type": "string", "default": "Yaya"},
+              {"variable": "niche", "type": "string", "default": "stocks"},
+              {"variable": "whatsapp_link", "type": "string", "required": true}
+            ]
+          }
+        },
+        {
+          "id": "intent_classifier",
+          "type": "question-classifier",
+          "position": {"x": 320, "y": 280},
+          "data": {
+            "title": "Intent Classifier",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "classes": [
+              {"id": "high_intent", "name": "High Intent - Interested in joining"},
+              {"id": "question", "name": "Question - Asking about group/KOL"},
+              {"id": "greeting", "name": "Greeting - Simple hello"},
+              {"id": "objection", "name": "Objection - Concerns/doubts"},
+              {"id": "negative", "name": "Negative - Not interested"},
+              {"id": "human_request", "name": "Human Request - Wants real person"}
+            ]
+          }
+        },
+        {
+          "id": "high_intent_response",
+          "type": "llm",
+          "position": {"x": 600, "y": 80},
+          "data": {
+            "title": "Send WhatsApp Link",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "system_prompt": "You are {{assistant_name}}, assistant to {{kol_name}}. The follower showed HIGH INTEREST. Send them the WhatsApp link: {{whatsapp_link}}. Be warm, use 1-2 emojis, keep under 100 words."
+          }
+        },
+        {
+          "id": "question_response",
+          "type": "llm",
+          "position": {"x": 600, "y": 200},
+          "data": {
+            "title": "Answer Question",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "system_prompt": "You are {{assistant_name}}, assistant to {{kol_name}}. Answer their question about the {{niche}} community, then gently guide towards joining. Keep under 100 words."
+          }
+        },
+        {
+          "id": "greeting_response",
+          "type": "llm",
+          "position": {"x": 600, "y": 320},
+          "data": {
+            "title": "Warm Greeting",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "system_prompt": "You are {{assistant_name}}. Respond warmly to the greeting, ask about their interest in {{niche}}. Build rapport first, dont mention WhatsApp yet. Under 50 words."
+          }
+        },
+        {
+          "id": "objection_response",
+          "type": "llm",
+          "position": {"x": 600, "y": 440},
+          "data": {
+            "title": "Handle Objection",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "system_prompt": "You are {{assistant_name}}. Address their concern honestly. Common objections: Why join? Is this scam? Why WhatsApp? Acknowledge concern first, dont be pushy. Under 100 words."
+          }
+        },
+        {
+          "id": "negative_response",
+          "type": "llm",
+          "position": {"x": 600, "y": 560},
+          "data": {
+            "title": "Graceful Exit",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "system_prompt": "End gracefully. Apologize briefly, thank them, wish well. DO NOT try to convince. Under 40 words."
+          }
+        },
+        {
+          "id": "human_handoff",
+          "type": "llm",
+          "position": {"x": 600, "y": 680},
+          "data": {
+            "title": "Human Handoff",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "system_prompt": "Acknowledge their request for real person. Let them know someone will follow up soon. Under 50 words."
+          }
+        }
+      ],
+      "edges": [
+        {"source": "start", "target": "intent_classifier"},
+        {"source": "intent_classifier", "sourceHandle": "high_intent", "target": "high_intent_response"},
+        {"source": "intent_classifier", "sourceHandle": "question", "target": "question_response"},
+        {"source": "intent_classifier", "sourceHandle": "greeting", "target": "greeting_response"},
+        {"source": "intent_classifier", "sourceHandle": "objection", "target": "objection_response"},
+        {"source": "intent_classifier", "sourceHandle": "negative", "target": "negative_response"},
+        {"source": "intent_classifier", "sourceHandle": "human_request", "target": "human_handoff"}
+      ]
+    },
+    "conversation_variables": [
+      {"name": "conversion_score", "type": "number", "default": 0},
+      {"name": "needs_human", "type": "boolean", "default": false},
+      {"name": "intent_history", "type": "array", "default": []}
+    ]
+  }
+}

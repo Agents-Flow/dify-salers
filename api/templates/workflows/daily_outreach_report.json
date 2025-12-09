@@ -1,0 +1,87 @@
+{
+  "version": "0.1.3",
+  "kind": "app",
+  "app": {
+    "name": "Daily Outreach Report Generator",
+    "description": "AI workflow to generate daily performance reports for social outreach campaigns.",
+    "mode": "workflow",
+    "icon": "📈",
+    "icon_background": "#8B5CF6"
+  },
+  "workflow": {
+    "graph": {
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "position": {"x": 80, "y": 200},
+          "data": {
+            "title": "Start",
+            "variables": [
+              {"variable": "kol_name", "type": "string", "required": true},
+              {"variable": "date", "type": "string", "required": true},
+              {"variable": "followers_scraped", "type": "number", "default": 0},
+              {"variable": "follows_sent", "type": "number", "default": 0},
+              {"variable": "follow_backs", "type": "number", "default": 0},
+              {"variable": "dms_sent", "type": "number", "default": 0},
+              {"variable": "replies_received", "type": "number", "default": 0},
+              {"variable": "conversions", "type": "number", "default": 0},
+              {"variable": "accounts_healthy", "type": "number", "default": 0},
+              {"variable": "accounts_total", "type": "number", "default": 0},
+              {"variable": "accounts_banned", "type": "number", "default": 0}
+            ]
+          }
+        },
+        {
+          "id": "calculate_metrics",
+          "type": "code",
+          "position": {"x": 280, "y": 200},
+          "data": {
+            "title": "Calculate Metrics",
+            "code_language": "python3",
+            "code": "def main(follows_sent: int, follow_backs: int, dms_sent: int, replies_received: int, conversions: int, accounts_healthy: int, accounts_total: int) -> dict:\n    # Calculate rates\n    follow_back_rate = (follow_backs / max(follows_sent, 1)) * 100\n    dm_response_rate = (replies_received / max(dms_sent, 1)) * 100\n    conversion_rate = (conversions / max(replies_received, 1)) * 100\n    account_health_rate = (accounts_healthy / max(accounts_total, 1)) * 100\n    \n    # Determine status\n    if follow_back_rate >= 5 and dm_response_rate >= 15 and conversion_rate >= 50:\n        overall_status = 'excellent'\n    elif follow_back_rate >= 3 and dm_response_rate >= 10 and conversion_rate >= 30:\n        overall_status = 'good'\n    elif follow_back_rate >= 1 and dm_response_rate >= 5:\n        overall_status = 'average'\n    else:\n        overall_status = 'needs_improvement'\n    \n    return {\n        'follow_back_rate': round(follow_back_rate, 1),\n        'dm_response_rate': round(dm_response_rate, 1),\n        'conversion_rate': round(conversion_rate, 1),\n        'account_health_rate': round(account_health_rate, 1),\n        'overall_status': overall_status\n    }"
+          }
+        },
+        {
+          "id": "generate_insights",
+          "type": "llm",
+          "position": {"x": 480, "y": 200},
+          "data": {
+            "title": "Generate Insights",
+            "model": {"provider": "openai", "name": "gpt-4o-mini"},
+            "system_prompt": "You are an analytics expert for social media outreach campaigns. Generate a brief daily report.\n\nKOL: {{kol_name}}\nDate: {{date}}\n\nMetrics:\n- Followers Scraped: {{followers_scraped}}\n- Follows Sent: {{follows_sent}}\n- Follow Backs: {{follow_backs}} ({{follow_back_rate}}%)\n- DMs Sent: {{dms_sent}}\n- Replies: {{replies_received}} ({{dm_response_rate}}%)\n- Conversions: {{conversions}} ({{conversion_rate}}%)\n- Account Health: {{accounts_healthy}}/{{accounts_total}} ({{account_health_rate}}%)\n- Banned Accounts: {{accounts_banned}}\n\nOverall Status: {{overall_status}}\n\nProvide:\n1. 2-3 sentence summary\n2. Top 3 recommendations for improvement\n3. Any alerts/warnings\n\nKeep it concise and actionable."
+          }
+        },
+        {
+          "id": "format_report",
+          "type": "template-transform",
+          "position": {"x": 680, "y": 200},
+          "data": {
+            "title": "Format Report",
+            "template": "# Daily Outreach Report\n## {{kol_name}} - {{date}}\n\n### 📊 Key Metrics\n| Metric | Value | Rate |\n|--------|-------|------|\n| Followers Scraped | {{followers_scraped}} | - |\n| Follows Sent | {{follows_sent}} | - |\n| Follow Backs | {{follow_backs}} | {{follow_back_rate}}% |\n| DMs Sent | {{dms_sent}} | - |\n| Replies | {{replies_received}} | {{dm_response_rate}}% |\n| Conversions | {{conversions}} | {{conversion_rate}}% |\n\n### 🏥 Account Health\n- Healthy: {{accounts_healthy}}/{{accounts_total}} ({{account_health_rate}}%)\n- Banned Today: {{accounts_banned}}\n\n### 💡 AI Insights\n{{insights}}\n\n---\n*Report generated automatically*"
+          }
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "position": {"x": 880, "y": 200},
+          "data": {
+            "title": "Output Report",
+            "outputs": [
+              {"variable": "report_markdown", "type": "string"},
+              {"variable": "overall_status", "type": "string"},
+              {"variable": "follow_back_rate", "type": "number"},
+              {"variable": "conversion_rate", "type": "number"}
+            ]
+          }
+        }
+      ],
+      "edges": [
+        {"source": "start", "target": "calculate_metrics"},
+        {"source": "calculate_metrics", "target": "generate_insights"},
+        {"source": "generate_insights", "target": "format_report"},
+        {"source": "format_report", "target": "end"}
+      ]
+    }
+  }
+}
