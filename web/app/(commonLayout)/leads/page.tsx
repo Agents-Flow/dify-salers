@@ -7,6 +7,7 @@
 import type { FC } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useRouter } from 'next/navigation'
 import {
   RiAddLine,
   RiArrowLeftLine,
@@ -449,12 +450,30 @@ const TaskDetailView: FC<TaskDetailViewProps> = ({ task, onBack, onEdit, onResta
 
 const LeadsPage: FC = () => {
   const { t } = useTranslation()
+  const router = useRouter()
   useDocumentTitle(t('common.menus.leads'))
 
   const { isCurrentWorkspaceEditor } = useAppContext()
 
   // State
   const [activeTab, setActiveTab] = useState<string>('leads')
+
+  // Handle tab change - navigate to sub-pages for new features
+  const handleTabChange = (tab: string) => {
+    if (tab === 'outreach') {
+      router.push('/leads/outreach')
+      return
+    }
+    if (tab === 'inbox') {
+      router.push('/leads/inbox')
+      return
+    }
+    if (tab === 'dashboard') {
+      router.push('/leads/dashboard')
+      return
+    }
+    setActiveTab(tab)
+  }
   const [page, setPage] = useState(0)
   const [searchKeyword, setSearchKeyword] = useState('')
   const [taskFilter, setTaskFilter] = useState<string>('')
@@ -500,6 +519,9 @@ const LeadsPage: FC = () => {
   const tabs = [
     { value: 'leads', text: t('leads.tabs.leads') },
     { value: 'tasks', text: t('leads.tabs.tasks') },
+    { value: 'outreach', text: t('leads.tabs.outreach') },
+    { value: 'inbox', text: t('leads.tabs.inbox') },
+    { value: 'dashboard', text: t('leads.tabs.dashboard') },
   ]
 
   const handleCreateTask = useCallback(async (data: CreateLeadTaskData) => {
@@ -584,7 +606,7 @@ const LeadsPage: FC = () => {
         <div className='flex items-center gap-4'>
           <TabSliderNew
             value={activeTab}
-            onChange={setActiveTab}
+            onChange={handleTabChange}
             options={tabs}
           />
           {/* Stats badges */}

@@ -299,6 +299,481 @@ export const useDeleteLeadTask = () => {
   })
 }
 
+// =============================================================================
+// Social Outreach Types
+// =============================================================================
+
+export type TargetKOL = {
+  id: string
+  tenant_id: string
+  platform: 'x' | 'instagram'
+  username: string
+  display_name?: string
+  profile_url?: string
+  bio?: string
+  avatar_url?: string
+  follower_count: number
+  region?: string
+  language: string
+  niche?: string
+  timezone?: string
+  status: 'active' | 'paused' | 'archived'
+  created_at: string
+  updated_at: string
+}
+
+export type SubAccount = {
+  id: string
+  tenant_id: string
+  platform: 'x' | 'instagram'
+  username: string
+  email?: string
+  target_kol_id?: string
+  browser_profile_id?: string
+  status: 'healthy' | 'needs_verification' | 'banned' | 'cooling'
+  daily_limit_follows: number
+  daily_limit_dms: number
+  daily_follows_used: number
+  daily_dms_used: number
+  lifetime_follows: number
+  lifetime_dms: number
+  cooling_until?: string
+  last_action_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export type FollowerTarget = {
+  id: string
+  tenant_id: string
+  target_kol_id: string
+  platform_user_id: string
+  username: string
+  display_name?: string
+  bio?: string
+  avatar_url?: string
+  follower_count: number
+  following_count: number
+  post_count: number
+  quality_tier: 'high' | 'medium' | 'low'
+  status: 'new' | 'followed' | 'follow_back' | 'dm_sent' | 'replied' | 'converted' | 'unfollowed' | 'blocked'
+  assigned_sub_account_id?: string
+  followed_at?: string
+  follow_back_at?: string
+  dm_sent_at?: string
+  replied_at?: string
+  converted_at?: string
+  created_at: string
+}
+
+export type OutreachConversation = {
+  id: string
+  platform: 'x' | 'instagram'
+  status: 'ai_handling' | 'needs_human' | 'human_handling' | 'paused' | 'converted' | 'closed'
+  follower?: {
+    id: string
+    username: string
+    display_name?: string
+    bio?: string
+    avatar_url?: string
+  }
+  sub_account?: {
+    id: string
+    username: string
+  }
+  total_messages: number
+  ai_turns: number
+  human_messages: number
+  conversion_score?: number
+  human_reason?: string
+  last_message_at?: string
+  created_at: string
+}
+
+export type OutreachMessage = {
+  id: string
+  direction: 'inbound' | 'outbound'
+  content: string
+  sender_type: 'ai' | 'human' | 'follower'
+  ai_intent?: string
+  delivery_status?: string
+  created_at: string
+}
+
+export type OutreachTask = {
+  id: string
+  tenant_id: string
+  target_kol_id: string
+  name: string
+  task_type: 'follow' | 'dm' | 'follow_dm'
+  platform: 'x' | 'instagram'
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  config?: Record<string, any>
+  message_templates?: string[]
+  target_count: number
+  processed_count: number
+  success_count: number
+  failed_count: number
+  scheduled_at?: string
+  created_at: string
+}
+
+export type DashboardOverview = {
+  kols: { total: number }
+  accounts: {
+    total: number
+    healthy: number
+    health_rate: number
+  }
+  funnel: {
+    total_followers: number
+    followed: number
+    follow_backs: number
+    dm_sent: number
+    converted: number
+    follow_back_rate: number
+    dm_response_rate: number
+    conversion_rate: number
+  }
+  conversations: {
+    total: number
+    active: number
+    needs_human: number
+  }
+}
+
+export type ImportResult = {
+  total_rows: number
+  imported: number
+  skipped: number
+  errors: string[]
+}
+
+// =============================================================================
+// Social Outreach Hooks - Target KOL
+// =============================================================================
+
+export const useTargetKOLList = (params: {
+  page?: number
+  limit?: number
+  platform?: string
+  status?: string
+} = {}) => {
+  return useQuery<{ data: TargetKOL[]; total: number; page: number; limit: number; has_more: boolean }>({
+    queryKey: [NAME_SPACE, 'kols', params],
+    queryFn: () => get('/target-kols', { params }),
+  })
+}
+
+export const useTargetKOL = (kolId: string, enabled = true) => {
+  return useQuery<TargetKOL>({
+    queryKey: [NAME_SPACE, 'kol', kolId],
+    queryFn: () => get(`/target-kols/${kolId}`),
+    enabled: enabled && !!kolId,
+  })
+}
+
+export const useCreateTargetKOL = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<TargetKOL>) =>
+      post<TargetKOL>('/target-kols', { body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'kols'] })
+    },
+  })
+}
+
+export const useUpdateTargetKOL = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: string } & Partial<TargetKOL>) =>
+      patch<TargetKOL>(`/target-kols/${id}`, { body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'kols'] })
+    },
+  })
+}
+
+export const useDeleteTargetKOL = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (kolId: string) => del(`/target-kols/${kolId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'kols'] })
+    },
+  })
+}
+
+export const useTargetKOLStats = (kolId: string, enabled = true) => {
+  return useQuery<Record<string, any>>({
+    queryKey: [NAME_SPACE, 'kol-stats', kolId],
+    queryFn: () => get(`/target-kols/${kolId}/stats`),
+    enabled: enabled && !!kolId,
+  })
+}
+
+export const useScrapeFollowers = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ kolId, maxFollowers = 1000 }: { kolId: string; maxFollowers?: number }) =>
+      post<{ result: string; created_count: number; message: string }>(
+        `/target-kols/${kolId}/scrape-followers`,
+        { body: { max_followers: maxFollowers } },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'follower-targets'] })
+    },
+  })
+}
+
+// =============================================================================
+// Social Outreach Hooks - Sub-Account
+// =============================================================================
+
+export const useSubAccountList = (params: {
+  page?: number
+  limit?: number
+  target_kol_id?: string
+  platform?: string
+  status?: string
+} = {}) => {
+  return useQuery<{ data: SubAccount[]; total: number; page: number; limit: number; has_more: boolean }>({
+    queryKey: [NAME_SPACE, 'sub-accounts', params],
+    queryFn: () => get('/sub-accounts', { params }),
+  })
+}
+
+export const useSubAccount = (accountId: string, enabled = true) => {
+  return useQuery<SubAccount>({
+    queryKey: [NAME_SPACE, 'sub-account', accountId],
+    queryFn: () => get(`/sub-accounts/${accountId}`),
+    enabled: enabled && !!accountId,
+  })
+}
+
+export const useCreateSubAccount = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<SubAccount> & { password?: string }) =>
+      post<SubAccount>('/sub-accounts', { body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'sub-accounts'] })
+    },
+  })
+}
+
+export const useImportSubAccounts = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: { platform: string; csv_content: string; target_kol_id?: string }) =>
+      post<ImportResult>('/sub-accounts/import', { body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'sub-accounts'] })
+    },
+  })
+}
+
+export const useDeleteSubAccount = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (accountId: string) => del(`/sub-accounts/${accountId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'sub-accounts'] })
+    },
+  })
+}
+
+export const useHealthCheckSubAccount = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (accountId: string) =>
+      post<{ account_id: string; previous_status: string; current_status: string; message: string }>(
+        `/sub-accounts/${accountId}/health-check`,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'sub-accounts'] })
+    },
+  })
+}
+
+export const useMarkSubAccountCooling = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ accountId, durationHours = 24, reason }: { accountId: string; durationHours?: number; reason?: string }) =>
+      post(`/sub-accounts/${accountId}/cooling`, { body: { duration_hours: durationHours, reason } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'sub-accounts'] })
+    },
+  })
+}
+
+// =============================================================================
+// Social Outreach Hooks - Follower Targets
+// =============================================================================
+
+export const useFollowerTargetList = (params: {
+  page?: number
+  limit?: number
+  target_kol_id?: string
+  status?: string
+  quality_tier?: string
+} = {}) => {
+  return useQuery<{ data: FollowerTarget[]; total: number; page: number; limit: number; has_more: boolean }>({
+    queryKey: [NAME_SPACE, 'follower-targets', params],
+    queryFn: () => get('/follower-targets', { params }),
+  })
+}
+
+export const useFunnelStats = (targetKolId?: string) => {
+  return useQuery<{
+    new: number
+    followed: number
+    follow_back: number
+    dm_sent: number
+    replied: number
+    converted: number
+  }>({
+    queryKey: [NAME_SPACE, 'funnel-stats', targetKolId],
+    queryFn: () => get('/follower-targets/funnel-stats', { params: { target_kol_id: targetKolId } }),
+  })
+}
+
+// =============================================================================
+// Social Outreach Hooks - Outreach Tasks
+// =============================================================================
+
+export const useOutreachTaskList = (params: {
+  page?: number
+  limit?: number
+  target_kol_id?: string
+  status?: string
+} = {}) => {
+  return useQuery<{ data: OutreachTask[]; total: number; page: number; limit: number; has_more: boolean }>({
+    queryKey: [NAME_SPACE, 'outreach-tasks', params],
+    queryFn: () => get('/outreach-tasks', { params }),
+  })
+}
+
+export const useCreateOutreachTask = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<OutreachTask>) =>
+      post<OutreachTask>('/outreach-tasks', { body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'outreach-tasks'] })
+    },
+  })
+}
+
+export const useStartOutreachTask = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (taskId: string) =>
+      post<{ result: string; message: string }>(`/outreach-tasks/${taskId}/start`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'outreach-tasks'] })
+    },
+  })
+}
+
+// =============================================================================
+// Social Outreach Hooks - Conversations (Unified Inbox)
+// =============================================================================
+
+export const useConversationList = (params: {
+  page?: number
+  limit?: number
+  status?: string
+  target_kol_id?: string
+  platform?: string
+  needs_attention?: string
+} = {}, options?: { refetchInterval?: number | false }) => {
+  return useQuery<{ data: OutreachConversation[]; total: number; page: number; limit: number; has_more: boolean }>({
+    queryKey: [NAME_SPACE, 'conversations', params],
+    queryFn: () => get('/conversations', { params }),
+    refetchInterval: options?.refetchInterval,
+  })
+}
+
+export const useConversation = (conversationId: string, enabled = true) => {
+  return useQuery<OutreachConversation & { messages: OutreachMessage[] }>({
+    queryKey: [NAME_SPACE, 'conversation', conversationId],
+    queryFn: () => get(`/conversations/${conversationId}`),
+    enabled: enabled && !!conversationId,
+  })
+}
+
+export const useUpdateConversationStatus = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status, reason }: { id: string; status: string; reason?: string }) =>
+      patch<OutreachConversation>(`/conversations/${id}/status`, { body: { status, reason } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'conversations'] })
+    },
+  })
+}
+
+export const useSendMessage = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ conversationId, content, senderType = 'human' }: {
+      conversationId: string
+      content: string
+      senderType?: 'human' | 'ai'
+    }) =>
+      post<OutreachMessage>(`/conversations/${conversationId}/messages`, {
+        body: { content, sender_type: senderType },
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'conversation', variables.conversationId] })
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'conversations'] })
+    },
+  })
+}
+
+export const useGenerateAIReply = () => {
+  return useMutation({
+    mutationFn: (conversationId: string) =>
+      post<{
+        content: string
+        intent: string
+        confidence: number
+        needs_human: boolean
+        conversion_score: number
+      }>(`/conversations/${conversationId}/ai-reply`),
+  })
+}
+
+// =============================================================================
+// Social Outreach Hooks - Dashboard
+// =============================================================================
+
+export const useDashboardOverview = (targetKolId?: string) => {
+  return useQuery<DashboardOverview>({
+    queryKey: [NAME_SPACE, 'dashboard', targetKolId],
+    queryFn: () => get('/dashboard/overview', { params: { target_kol_id: targetKolId } }),
+  })
+}
+
+export const useAIStatus = () => {
+  return useQuery<{
+    conversation_ai: { enabled: boolean; configured: boolean }
+    follower_scraper: { enabled: boolean; configured: boolean }
+  }>({
+    queryKey: [NAME_SPACE, 'ai-status'],
+    queryFn: () => get('/dashboard/ai-status'),
+  })
+}
+
+export const useScraperStatus = () => {
+  return useQuery<{ configured: boolean; enabled: boolean; has_token: boolean }>({
+    queryKey: [NAME_SPACE, 'scraper-status'],
+    queryFn: () => get('/scraper/status'),
+  })
+}
+
 // ===== Utility Functions =====
 
 export const getIntentLevel = (score: number): 'high' | 'medium' | 'low' | 'unknown' => {

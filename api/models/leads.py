@@ -42,6 +42,49 @@ class SupportedPlatform(StrEnum):
     KUAISHOU = "kuaishou"  # 快手
     BILIBILI = "bilibili"  # B站
     WEIBO = "weibo"  # 微博
+    X = "x"  # X (formerly Twitter)
+    INSTAGRAM = "instagram"  # Instagram
+
+
+class SubAccountStatus(StrEnum):
+    """Sub-account health status."""
+
+    HEALTHY = "healthy"
+    NEEDS_VERIFICATION = "needs_verification"
+    BANNED = "banned"
+    COOLING = "cooling"
+    PASSWORD_ERROR = "password_error"
+
+
+class FollowerTargetStatus(StrEnum):
+    """Follower target conversion status."""
+
+    NEW = "new"  # Newly scraped, not touched
+    FOLLOWED = "followed"  # Follow request sent
+    FOLLOW_BACK = "follow_back"  # Mutual follow achieved (for Instagram)
+    DM_SENT = "dm_sent"  # DM sent
+    CONVERSING = "conversing"  # AI conversation in progress
+    NEEDS_HUMAN = "needs_human"  # Requires human intervention
+    CONVERTED = "converted"  # Successfully converted to private domain
+    FAILED = "failed"  # Conversion failed
+    UNFOLLOWED = "unfollowed"  # Auto-unfollowed due to timeout
+
+
+class ConversationStatus(StrEnum):
+    """Outreach conversation status."""
+
+    AI_HANDLING = "ai_handling"
+    NEEDS_HUMAN = "needs_human"
+    HUMAN_HANDLING = "human_handling"
+    CLOSED = "closed"
+
+
+class QualityTier(StrEnum):
+    """Follower quality tier for filtering."""
+
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
 
 
 class LeadTask(TypeBase):
@@ -343,3 +386,407 @@ class Lead(TypeBase):
 
     def __repr__(self) -> str:
         return f"<Lead(id={self.id}, nickname={self.nickname}, intent_score={self.intent_score})>"
+
+
+class TargetKOL(TypeBase):
+    """
+    Target KOL account model.
+    Represents the influencer accounts whose followers we want to convert.
+    Sub-accounts will mimic these KOLs to build trust.
+    """
+
+    __tablename__ = "target_kols"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="target_kol_pkey"),
+        sa.Index("target_kol_tenant_idx", "tenant_id"),
+        sa.Index("target_kol_platform_idx", "platform"),
+        sa.Index("target_kol_status_idx", "status"),
+        sa.UniqueConstraint("tenant_id", "platform", "username", name="unique_target_kol_platform_user"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    tenant_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)  # "x" | "instagram"
+    username: Mapped[str] = mapped_column(String(255), nullable=False)
+    display_name: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    profile_url: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    bio: Mapped[str | None] = mapped_column(LongText, nullable=True, default=None)
+    follower_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"))
+    following_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"))
+    region: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)
+    language: Mapped[str] = mapped_column(String(20), default="en", server_default=sa.text("'en'"))
+    # Niche category: "stocks" | "crypto" | "finance"
+    niche: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)
+    timezone: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
+    status: Mapped[str] = mapped_column(String(50), default="active", server_default=sa.text("'active'"))
+    last_synced_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    created_by: Mapped[str | None] = mapped_column(StringUUID, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<TargetKOL(id={self.id}, platform={self.platform}, username={self.username})>"
+
+
+class SubAccount(TypeBase):
+    """
+    Sub-account model for outreach operations.
+    These accounts perform follow, DM, and engagement tasks.
+    Each sub-account is bound to an anti-detect browser profile and proxy.
+    """
+
+    __tablename__ = "sub_accounts"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="sub_account_pkey"),
+        sa.Index("sub_account_tenant_idx", "tenant_id"),
+        sa.Index("sub_account_kol_idx", "target_kol_id"),
+        sa.Index("sub_account_status_idx", "status"),
+        sa.UniqueConstraint("tenant_id", "platform", "username", name="unique_sub_account_platform_user"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    tenant_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)  # "x" | "instagram"
+    username: Mapped[str] = mapped_column(String(255), nullable=False)
+    target_kol_id: Mapped[str | None] = mapped_column(StringUUID, nullable=True, default=None)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    email_password_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    password_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+
+    # Anti-detect browser configuration
+    browser_profile_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    # Browser provider: "multilogin" | "gologin"
+    browser_provider: Mapped[str | None] = mapped_column(String(50), nullable=True, default=None)
+
+    # Proxy configuration (stored as JSON)
+    proxy_config: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True, default=None)
+
+    # Status management
+    status: Mapped[str] = mapped_column(String(50), default="healthy", server_default=sa.text("'healthy'"))
+    last_health_check: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    cooling_until: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    ban_reason: Mapped[str | None] = mapped_column(Text, nullable=True, default=None, init=False)
+
+    # Daily limits and counters (reset daily)
+    daily_follows: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+    daily_dms: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+    daily_limit_follows: Mapped[int] = mapped_column(sa.Integer, default=50, server_default=sa.text("50"))
+    daily_limit_dms: Mapped[int] = mapped_column(sa.Integer, default=30, server_default=sa.text("30"))
+
+    # Lifetime statistics
+    total_follows: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+    total_dms: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+    total_conversions: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+
+    # Account age for warming strategy
+    account_created_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None)
+    is_warmed: Mapped[bool] = mapped_column(sa.Boolean, default=False, server_default=sa.text("false"))
+
+    created_by: Mapped[str | None] = mapped_column(StringUUID, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<SubAccount(id={self.id}, platform={self.platform}, username={self.username}, status={self.status})>"
+
+
+class FollowerTarget(TypeBase):
+    """
+    Follower target model.
+    Represents followers of target KOLs that we want to convert.
+    Tracks the full conversion funnel status.
+    """
+
+    __tablename__ = "follower_targets"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="follower_target_pkey"),
+        sa.Index("follower_target_tenant_idx", "tenant_id"),
+        sa.Index("follower_target_kol_idx", "target_kol_id"),
+        sa.Index("follower_target_status_idx", "status"),
+        sa.Index("follower_target_quality_idx", "quality_tier"),
+        sa.UniqueConstraint("tenant_id", "platform", "platform_user_id", name="unique_follower_target_platform_user"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    tenant_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    target_kol_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)  # "x" | "instagram"
+    platform_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    username: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    display_name: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+    bio: Mapped[str | None] = mapped_column(LongText, nullable=True, default=None)
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    follower_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"))
+    following_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"))
+    post_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"))
+    is_verified: Mapped[bool] = mapped_column(sa.Boolean, default=False, server_default=sa.text("false"))
+    is_private: Mapped[bool] = mapped_column(sa.Boolean, default=False, server_default=sa.text("false"))
+
+    # Quality assessment
+    quality_tier: Mapped[str] = mapped_column(String(20), default="medium", server_default=sa.text("'medium'"))
+    quality_score: Mapped[int] = mapped_column(sa.Integer, default=50, server_default=sa.text("50"))
+    tags: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, default=None)
+
+    # Conversion funnel status
+    status: Mapped[str] = mapped_column(String(50), default="new", server_default=sa.text("'new'"))
+
+    # Assigned sub-account for this target
+    assigned_sub_account_id: Mapped[str | None] = mapped_column(StringUUID, nullable=True, default=None, init=False)
+
+    # Timestamps for each funnel stage
+    scraped_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    followed_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    follow_back_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    dm_sent_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    converted_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+
+    # Follow-back timeout (for auto-unfollow)
+    follow_timeout_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<FollowerTarget(id={self.id}, username={self.username}, status={self.status})>"
+
+
+class OutreachConversation(TypeBase):
+    """
+    Outreach conversation model.
+    Tracks DM conversations between sub-accounts and follower targets.
+    """
+
+    __tablename__ = "outreach_conversations"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="outreach_conversation_pkey"),
+        sa.Index("outreach_conversation_tenant_idx", "tenant_id"),
+        sa.Index("outreach_conversation_sub_account_idx", "sub_account_id"),
+        sa.Index("outreach_conversation_target_idx", "follower_target_id"),
+        sa.Index("outreach_conversation_status_idx", "status"),
+        sa.UniqueConstraint("sub_account_id", "follower_target_id", name="unique_conversation_sub_target"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    tenant_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    sub_account_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    follower_target_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # Conversation status
+    status: Mapped[str] = mapped_column(String(50), default="ai_handling", server_default=sa.text("'ai_handling'"))
+
+    # AI handling metadata
+    ai_turns: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+    ai_failed_turns: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+
+    # Human intervention
+    human_operator_id: Mapped[str | None] = mapped_column(StringUUID, nullable=True, default=None, init=False)
+    human_takeover_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    human_takeover_reason: Mapped[str | None] = mapped_column(Text, nullable=True, default=None, init=False)
+
+    # Conversion tracking
+    whatsapp_link_sent: Mapped[bool] = mapped_column(
+        sa.Boolean, default=False, server_default=sa.text("false"), init=False
+    )
+    whatsapp_link_sent_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime, nullable=True, default=None, init=False
+    )
+    conversion_confirmed: Mapped[bool] = mapped_column(
+        sa.Boolean, default=False, server_default=sa.text("false"), init=False
+    )
+    conversion_confirmed_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime, nullable=True, default=None, init=False
+    )
+
+    last_message_at: Mapped[datetime | None] = mapped_column(
+        sa.DateTime, nullable=True, default=None, init=False
+    )
+    # Direction: "us" | "them"
+    last_message_from: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, default=None, init=False
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<OutreachConversation(id={self.id}, status={self.status})>"
+
+
+class OutreachMessage(TypeBase):
+    """
+    Outreach message model.
+    Individual messages within an outreach conversation.
+    """
+
+    __tablename__ = "outreach_messages"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="outreach_message_pkey"),
+        sa.Index("outreach_message_conversation_idx", "conversation_id"),
+        sa.Index("outreach_message_created_at_idx", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    conversation_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    direction: Mapped[str] = mapped_column(String(20), nullable=False)  # "outbound" | "inbound"
+    content: Mapped[str] = mapped_column(LongText, nullable=False)
+
+    # Message source
+    sender_type: Mapped[str] = mapped_column(String(20), nullable=False)  # "ai" | "human" | "follower"
+    sender_id: Mapped[str | None] = mapped_column(StringUUID, nullable=True, default=None)  # operator ID if human
+
+    # AI decision tracking
+    ai_intent_detected: Mapped[str | None] = mapped_column(String(100), nullable=True, default=None)
+    ai_response_template: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+
+    # Platform message ID for deduplication
+    platform_message_id: Mapped[str | None] = mapped_column(String(255), nullable=True, default=None)
+
+    # Delivery status
+    delivered: Mapped[bool] = mapped_column(sa.Boolean, default=True, server_default=sa.text("true"))
+    delivered_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    read_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<OutreachMessage(id={self.id}, direction={self.direction}, sender_type={self.sender_type})>"
+
+
+class OutreachTask(TypeBase):
+    """
+    Outreach task model.
+    Represents scheduled follow/DM tasks for batch processing.
+    """
+
+    __tablename__ = "outreach_tasks"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="outreach_task_pkey"),
+        sa.Index("outreach_task_tenant_idx", "tenant_id"),
+        sa.Index("outreach_task_kol_idx", "target_kol_id"),
+        sa.Index("outreach_task_status_idx", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    tenant_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    target_kol_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    task_type: Mapped[str] = mapped_column(String(50), nullable=False)  # "follow" | "dm" | "follow_dm"
+    platform: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # Task configuration
+    config: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+
+    # Message templates (for DM tasks)
+    message_templates: Mapped[list[str] | None] = mapped_column(JSON, nullable=True, default=None)
+
+    # Execution settings
+    target_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"))
+    processed_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+    success_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+    failed_count: Mapped[int] = mapped_column(sa.Integer, default=0, server_default=sa.text("0"), init=False)
+
+    status: Mapped[str] = mapped_column(String(50), default="pending", server_default=sa.text("'pending'"), init=False)
+    error_message: Mapped[str | None] = mapped_column(LongText, nullable=True, default=None, init=False)
+
+    # Scheduling
+    scheduled_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None)
+    started_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+    completed_at: Mapped[datetime | None] = mapped_column(sa.DateTime, nullable=True, default=None, init=False)
+
+    created_by: Mapped[str | None] = mapped_column(StringUUID, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<OutreachTask(id={self.id}, name={self.name}, status={self.status})>"
