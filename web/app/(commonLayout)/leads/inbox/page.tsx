@@ -176,7 +176,7 @@ const ConversationDetail: FC<ConversationDetailProps> = ({ conversationId, onSta
       refetch()
     }
     catch {
-      Toast.notify({ type: 'error', message: t('inbox.message.sendFailed') })
+      Toast.notify({ type: 'error', message: t('leads.inbox.message.sendFailed') })
     }
   }, [sendMessage, conversationId, newMessage, refetch, t])
 
@@ -190,43 +190,43 @@ const ConversationDetail: FC<ConversationDetailProps> = ({ conversationId, onSta
       setNewMessage(result.content)
     }
     catch {
-      Toast.notify({ type: 'error', message: t('inbox.message.generateFailed') })
+      Toast.notify({ type: 'error', message: t('leads.inbox.message.generateFailed') })
     }
   }, [generateAI, conversationId, t])
 
   const handleTakeover = useCallback(async () => {
     try {
       await updateStatus.mutateAsync({ id: conversationId, status: 'human_handling' })
-      Toast.notify({ type: 'success', message: t('inbox.message.takenOver') })
+      Toast.notify({ type: 'success', message: t('leads.inbox.message.takenOver') })
       onStatusChange()
       refetch()
     }
     catch {
-      Toast.notify({ type: 'error', message: t('inbox.message.takeoverFailed') })
+      Toast.notify({ type: 'error', message: t('leads.inbox.message.takeoverFailed') })
     }
   }, [updateStatus, conversationId, onStatusChange, refetch, t])
 
   const handleClose = useCallback(async () => {
     try {
       await updateStatus.mutateAsync({ id: conversationId, status: 'closed' })
-      Toast.notify({ type: 'success', message: t('inbox.message.closed') })
+      Toast.notify({ type: 'success', message: t('leads.inbox.message.closed') })
       onStatusChange()
       refetch()
     }
     catch {
-      Toast.notify({ type: 'error', message: t('inbox.message.closeFailed') })
+      Toast.notify({ type: 'error', message: t('leads.inbox.message.closeFailed') })
     }
   }, [updateStatus, conversationId, onStatusChange, refetch, t])
 
   const handleMarkConverted = useCallback(async () => {
     try {
       await updateStatus.mutateAsync({ id: conversationId, status: 'converted' })
-      Toast.notify({ type: 'success', message: t('inbox.message.converted') })
+      Toast.notify({ type: 'success', message: t('leads.inbox.message.converted') })
       onStatusChange()
       refetch()
     }
     catch {
-      Toast.notify({ type: 'error', message: t('inbox.message.convertFailed') })
+      Toast.notify({ type: 'error', message: t('leads.inbox.message.convertFailed') })
     }
   }, [updateStatus, conversationId, onStatusChange, refetch, t])
 
@@ -241,7 +241,7 @@ const ConversationDetail: FC<ConversationDetailProps> = ({ conversationId, onSta
   if (!conversation) {
     return (
       <div className='flex h-full items-center justify-center text-text-tertiary'>
-        {t('inbox.empty.conversation')}
+        {t('leads.inbox.empty.conversation')}
       </div>
     )
   }
@@ -269,14 +269,14 @@ const ConversationDetail: FC<ConversationDetailProps> = ({ conversationId, onSta
           </span>
           {conversation.status === 'needs_human' && (
             <Button variant='primary' size='small' onClick={handleTakeover}>
-              {t('inbox.action.takeover')}
+              {t('leads.inbox.action.takeover')}
             </Button>
           )}
           {conversation.status !== 'converted' && conversation.status !== 'closed' && (
             <>
               <Button variant='secondary' size='small' onClick={handleMarkConverted}>
                 <RiCheckLine className='mr-1 h-3 w-3' />
-                {t('inbox.action.markConverted')}
+                {t('leads.inbox.action.markConverted')}
               </Button>
               <Button variant='ghost' size='small' onClick={handleClose}>
                 <RiCloseLine className='h-3 w-3' />
@@ -301,7 +301,7 @@ const ConversationDetail: FC<ConversationDetailProps> = ({ conversationId, onSta
             <textarea
               value={newMessage}
               onChange={e => setNewMessage(e.target.value)}
-              placeholder={t('inbox.input.placeholder')}
+              placeholder={t('leads.inbox.input.placeholder')}
               className='flex-1 resize-none rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-3 py-2 text-sm text-text-secondary focus:outline-none'
               rows={2}
               onKeyDown={(e) => {
@@ -326,7 +326,7 @@ const ConversationDetail: FC<ConversationDetailProps> = ({ conversationId, onSta
                 size='small'
                 onClick={handleGenerateAI}
                 loading={generateAI.isPending}
-                title={t('inbox.action.generateAI')}
+                title={t('leads.inbox.action.generateAI')}
               >
                 <RiRobotLine className='h-4 w-4' />
               </Button>
@@ -344,7 +344,7 @@ const ConversationDetail: FC<ConversationDetailProps> = ({ conversationId, onSta
 
 const InboxPage: FC = () => {
   const { t } = useTranslation()
-  useDocumentTitle(t('inbox.title'))
+  useDocumentTitle(t('leads.inbox.title'))
 
   const [statusFilter, setStatusFilter] = useState<string>('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -362,12 +362,12 @@ const InboxPage: FC = () => {
   }, [conversations])
 
   const statusOptions = [
-    { value: '', label: t('inbox.filter.all') },
-    { value: 'needs_human', label: t('inbox.filter.needsHuman') },
-    { value: 'ai_handling', label: t('inbox.filter.aiHandling') },
-    { value: 'human_handling', label: t('inbox.filter.humanHandling') },
-    { value: 'converted', label: t('inbox.filter.converted') },
-    { value: 'closed', label: t('inbox.filter.closed') },
+    { value: '', label: t('leads.inbox.filter.all') },
+    { value: 'needs_human', label: t('leads.inbox.filter.needsHuman') },
+    { value: 'ai_handling', label: t('leads.inbox.filter.aiHandling') },
+    { value: 'human_handling', label: t('leads.inbox.filter.humanHandling') },
+    { value: 'converted', label: t('leads.inbox.filter.converted') },
+    { value: 'closed', label: t('leads.inbox.filter.closed') },
   ]
 
   const needsHumanCount = conversations?.data?.filter(c => c.status === 'needs_human').length || 0
@@ -379,7 +379,7 @@ const InboxPage: FC = () => {
         {/* Header */}
         <div className='flex items-center justify-between border-b border-divider-subtle p-4'>
           <div className='flex items-center gap-2'>
-            <h2 className='text-lg font-semibold text-text-primary'>{t('inbox.title')}</h2>
+            <h2 className='text-lg font-semibold text-text-primary'>{t('leads.inbox.title')}</h2>
             {needsHumanCount > 0 && (
               <span className='inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-util-colors-red-red-500 px-1.5 text-xs font-medium text-white'>
                 {needsHumanCount}
@@ -423,7 +423,7 @@ const InboxPage: FC = () => {
               ))
               : (
                 <div className='p-8 text-center text-text-tertiary'>
-                  {t('inbox.empty.conversations')}
+                  {t('leads.inbox.empty.conversations')}
                 </div>
               )}
         </div>
@@ -440,7 +440,7 @@ const InboxPage: FC = () => {
           )
           : (
             <div className='flex h-full items-center justify-center text-text-tertiary'>
-              {t('inbox.empty.selectConversation')}
+              {t('leads.inbox.empty.selectConversation')}
             </div>
           )}
       </div>

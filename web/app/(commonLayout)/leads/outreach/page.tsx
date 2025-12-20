@@ -56,7 +56,7 @@ const KOLForm: FC<KOLFormProps> = ({ onSubmit, onCancel, isLoading, initialData 
 
   const handleSubmit = () => {
     if (!username.trim()) {
-      Toast.notify({ type: 'error', message: t('outreach.kol.usernameRequired') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.kol.usernameRequired') })
       return
     }
     onSubmit({
@@ -73,7 +73,7 @@ const KOLForm: FC<KOLFormProps> = ({ onSubmit, onCancel, isLoading, initialData 
     <div className='space-y-4 p-6'>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.kol.platform')} <span className='text-util-colors-red-red-600'>*</span>
+          {t('leads.outreach.kol.platform')} <span className='text-util-colors-red-red-600'>*</span>
         </label>
         <select
           value={platform}
@@ -86,7 +86,7 @@ const KOLForm: FC<KOLFormProps> = ({ onSubmit, onCancel, isLoading, initialData 
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.kol.username')} <span className='text-util-colors-red-red-600'>*</span>
+          {t('leads.outreach.kol.username')} <span className='text-util-colors-red-red-600'>*</span>
         </label>
         <Input
           value={username}
@@ -96,17 +96,17 @@ const KOLForm: FC<KOLFormProps> = ({ onSubmit, onCancel, isLoading, initialData 
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.kol.displayName')}
+          {t('leads.outreach.kol.displayName')}
         </label>
         <Input
           value={displayName}
           onChange={e => setDisplayName(e.target.value)}
-          placeholder={t('outreach.kol.displayNamePlaceholder')}
+          placeholder={t('leads.outreach.kol.displayNamePlaceholder')}
         />
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.kol.profileUrl')}
+          {t('leads.outreach.kol.profileUrl')}
         </label>
         <Input
           value={profileUrl}
@@ -116,14 +116,14 @@ const KOLForm: FC<KOLFormProps> = ({ onSubmit, onCancel, isLoading, initialData 
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.kol.niche')}
+          {t('leads.outreach.kol.niche')}
         </label>
         <select
           value={niche}
           onChange={e => setNiche(e.target.value)}
           className='w-full rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-3 py-2 text-sm text-text-secondary'
         >
-          <option value=''>{t('outreach.kol.selectNiche')}</option>
+          <option value=''>{t('leads.outreach.kol.selectNiche')}</option>
           <option value='stocks'>Stocks</option>
           <option value='crypto'>Crypto</option>
           <option value='forex'>Forex</option>
@@ -133,7 +133,7 @@ const KOLForm: FC<KOLFormProps> = ({ onSubmit, onCancel, isLoading, initialData 
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.kol.region')}
+          {t('leads.outreach.kol.region')}
         </label>
         <Input
           value={region}
@@ -174,7 +174,7 @@ const AccountForm: FC<AccountFormProps> = ({ onSubmit, onCancel, isLoading, kols
 
   const handleSubmit = () => {
     if (!username.trim()) {
-      Toast.notify({ type: 'error', message: t('outreach.account.usernameRequired') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.account.usernameRequired') })
       return
     }
     onSubmit({
@@ -190,7 +190,7 @@ const AccountForm: FC<AccountFormProps> = ({ onSubmit, onCancel, isLoading, kols
     <div className='space-y-4 p-6'>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.account.platform')} <span className='text-util-colors-red-red-600'>*</span>
+          {t('leads.outreach.account.platform')} <span className='text-util-colors-red-red-600'>*</span>
         </label>
         <select
           value={platform}
@@ -203,7 +203,7 @@ const AccountForm: FC<AccountFormProps> = ({ onSubmit, onCancel, isLoading, kols
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.account.username')} <span className='text-util-colors-red-red-600'>*</span>
+          {t('leads.outreach.account.username')} <span className='text-util-colors-red-red-600'>*</span>
         </label>
         <Input
           value={username}
@@ -213,7 +213,7 @@ const AccountForm: FC<AccountFormProps> = ({ onSubmit, onCancel, isLoading, kols
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.account.email')}
+          {t('leads.outreach.account.email')}
         </label>
         <Input
           value={email}
@@ -223,7 +223,7 @@ const AccountForm: FC<AccountFormProps> = ({ onSubmit, onCancel, isLoading, kols
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.account.password')}
+          {t('leads.outreach.account.password')}
         </label>
         <Input
           type='password'
@@ -234,14 +234,14 @@ const AccountForm: FC<AccountFormProps> = ({ onSubmit, onCancel, isLoading, kols
       </div>
       <div>
         <label className='mb-1 block text-sm font-medium text-text-secondary'>
-          {t('outreach.account.assignKol')}
+          {t('leads.outreach.account.assignKol')}
         </label>
         <select
           value={targetKolId}
           onChange={e => setTargetKolId(e.target.value)}
           className='w-full rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-3 py-2 text-sm text-text-secondary'
         >
-          <option value=''>{t('outreach.account.noAssignment')}</option>
+          <option value=''>{t('leads.outreach.account.noAssignment')}</option>
           {kols.map(kol => (
             <option key={kol.id} value={kol.id}>
               @{kol.username} ({kol.platform})
@@ -281,18 +281,18 @@ const ImportModal: FC<ImportModalProps> = ({ isShow, onClose, onImport, isLoadin
 
   const handleImport = () => {
     if (!csvContent.trim()) {
-      Toast.notify({ type: 'error', message: t('outreach.import.csvRequired') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.import.csvRequired') })
       return
     }
     onImport(platform, csvContent, targetKolId || undefined)
   }
 
   return (
-    <Modal isShow={isShow} onClose={onClose} title={t('outreach.import.title')} className='!max-w-[500px]'>
+    <Modal isShow={isShow} onClose={onClose} title={t('leads.outreach.import.title')} className='!max-w-[500px]'>
       <div className='space-y-4 p-6'>
         <div>
           <label className='mb-1 block text-sm font-medium text-text-secondary'>
-            {t('outreach.account.platform')}
+            {t('leads.outreach.account.platform')}
           </label>
           <select
             value={platform}
@@ -305,14 +305,14 @@ const ImportModal: FC<ImportModalProps> = ({ isShow, onClose, onImport, isLoadin
         </div>
         <div>
           <label className='mb-1 block text-sm font-medium text-text-secondary'>
-            {t('outreach.account.assignKol')}
+            {t('leads.outreach.account.assignKol')}
           </label>
           <select
             value={targetKolId}
             onChange={e => setTargetKolId(e.target.value)}
             className='w-full rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-3 py-2 text-sm text-text-secondary'
           >
-            <option value=''>{t('outreach.account.noAssignment')}</option>
+            <option value=''>{t('leads.outreach.account.noAssignment')}</option>
             {kols.map(kol => (
               <option key={kol.id} value={kol.id}>
                 @{kol.username} ({kol.platform})
@@ -322,15 +322,15 @@ const ImportModal: FC<ImportModalProps> = ({ isShow, onClose, onImport, isLoadin
         </div>
         <div>
           <label className='mb-1 block text-sm font-medium text-text-secondary'>
-            {t('outreach.import.csvContent')}
+            {t('leads.outreach.import.csvContent')}
           </label>
           <textarea
             value={csvContent}
             onChange={e => setCsvContent(e.target.value)}
-            placeholder={t('outreach.import.csvPlaceholder')}
+            placeholder={t('leads.outreach.import.csvPlaceholder')}
             className='h-40 w-full rounded-lg border border-components-input-border-active bg-components-input-bg-normal px-3 py-2 text-sm text-text-secondary'
           />
-          <p className='mt-1 text-xs text-text-tertiary'>{t('outreach.import.csvHelp')}</p>
+          <p className='mt-1 text-xs text-text-tertiary'>{t('leads.outreach.import.csvHelp')}</p>
         </div>
         <div className='flex justify-end gap-2 pt-4'>
           <Button variant='secondary' onClick={onClose}>
@@ -338,7 +338,7 @@ const ImportModal: FC<ImportModalProps> = ({ isShow, onClose, onImport, isLoadin
           </Button>
           <Button variant='primary' onClick={handleImport} loading={isLoading}>
             <RiUploadLine className='mr-1 h-4 w-4' />
-            {t('outreach.import.import')}
+            {t('leads.outreach.import.import')}
           </Button>
         </div>
       </div>
@@ -369,7 +369,7 @@ const getStatusBadgeClass = (status: string): string => {
 
 const OutreachPage: FC = () => {
   const { t } = useTranslation()
-  useDocumentTitle(t('outreach.title'))
+  useDocumentTitle(t('leads.outreach.title'))
 
   // State
   const [activeTab, setActiveTab] = useState<string>('kols')
@@ -395,19 +395,19 @@ const OutreachPage: FC = () => {
   const scrapeFollowers = useScrapeFollowers()
 
   const tabs = [
-    { value: 'kols', text: t('outreach.tabs.kols') },
-    { value: 'accounts', text: t('outreach.tabs.accounts') },
+    { value: 'kols', text: t('leads.outreach.tabs.kols') },
+    { value: 'accounts', text: t('leads.outreach.tabs.accounts') },
   ]
 
   // Handlers
   const handleCreateKOL = useCallback(async (data: Partial<TargetKOL>) => {
     try {
       await createKOL.mutateAsync(data)
-      Toast.notify({ type: 'success', message: t('outreach.message.kolCreated') })
+      Toast.notify({ type: 'success', message: t('leads.outreach.message.kolCreated') })
       setShowCreateKOL(false)
     }
     catch {
-      Toast.notify({ type: 'error', message: t('outreach.message.createFailed') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.message.createFailed') })
     }
   }, [createKOL, t])
 
@@ -416,22 +416,22 @@ const OutreachPage: FC = () => {
       return
     try {
       await deleteKOL.mutateAsync(kolToDelete)
-      Toast.notify({ type: 'success', message: t('outreach.message.kolDeleted') })
+      Toast.notify({ type: 'success', message: t('leads.outreach.message.kolDeleted') })
       setKolToDelete(null)
     }
     catch {
-      Toast.notify({ type: 'error', message: t('outreach.message.deleteFailed') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.message.deleteFailed') })
     }
   }, [deleteKOL, kolToDelete, t])
 
   const handleCreateAccount = useCallback(async (data: Partial<SubAccount> & { password?: string }) => {
     try {
       await createAccount.mutateAsync(data)
-      Toast.notify({ type: 'success', message: t('outreach.message.accountCreated') })
+      Toast.notify({ type: 'success', message: t('leads.outreach.message.accountCreated') })
       setShowCreateAccount(false)
     }
     catch {
-      Toast.notify({ type: 'error', message: t('outreach.message.createFailed') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.message.createFailed') })
     }
   }, [createAccount, t])
 
@@ -440,12 +440,12 @@ const OutreachPage: FC = () => {
       const result = await importAccounts.mutateAsync({ platform, csv_content: csvContent, target_kol_id: targetKolId })
       Toast.notify({
         type: 'success',
-        message: t('outreach.message.imported', { count: result.imported }),
+        message: t('leads.outreach.message.imported', { count: result.imported }),
       })
       setShowImport(false)
     }
     catch {
-      Toast.notify({ type: 'error', message: t('outreach.message.importFailed') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.message.importFailed') })
     }
   }, [importAccounts, t])
 
@@ -454,11 +454,11 @@ const OutreachPage: FC = () => {
       return
     try {
       await deleteAccount.mutateAsync(accountToDelete)
-      Toast.notify({ type: 'success', message: t('outreach.message.accountDeleted') })
+      Toast.notify({ type: 'success', message: t('leads.outreach.message.accountDeleted') })
       setAccountToDelete(null)
     }
     catch {
-      Toast.notify({ type: 'error', message: t('outreach.message.deleteFailed') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.message.deleteFailed') })
     }
   }, [deleteAccount, accountToDelete, t])
 
@@ -471,24 +471,24 @@ const OutreachPage: FC = () => {
       })
     }
     catch {
-      Toast.notify({ type: 'error', message: t('outreach.message.healthCheckFailed') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.message.healthCheckFailed') })
     }
   }, [healthCheck, t])
 
   const handleScrapeFollowers = useCallback(async (kolId: string) => {
     if (!scraperStatus?.configured) {
-      Toast.notify({ type: 'error', message: t('outreach.message.scraperNotConfigured') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.message.scraperNotConfigured') })
       return
     }
     try {
       const result = await scrapeFollowers.mutateAsync({ kolId, maxFollowers: 1000 })
       Toast.notify({
         type: 'success',
-        message: t('outreach.message.followerScraped', { count: result.created_count }),
+        message: t('leads.outreach.message.followerScraped', { count: result.created_count }),
       })
     }
     catch {
-      Toast.notify({ type: 'error', message: t('outreach.message.scrapeFailed') })
+      Toast.notify({ type: 'error', message: t('leads.outreach.message.scrapeFailed') })
     }
   }, [scraperStatus, scrapeFollowers, t])
 
@@ -500,7 +500,7 @@ const OutreachPage: FC = () => {
           <TabSliderNew value={activeTab} onChange={setActiveTab} options={tabs} />
           {scraperStatus && (
             <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs ${scraperStatus.configured ? 'bg-util-colors-green-green-50 text-util-colors-green-green-600' : 'bg-util-colors-orange-orange-50 text-util-colors-orange-orange-600'}`}>
-              {scraperStatus.configured ? t('outreach.scraper.configured') : t('outreach.scraper.notConfigured')}
+              {scraperStatus.configured ? t('leads.outreach.scraper.configured') : t('leads.outreach.scraper.notConfigured')}
             </span>
           )}
         </div>
@@ -512,7 +512,7 @@ const OutreachPage: FC = () => {
               </Button>
               <Button variant='primary' onClick={() => setShowCreateKOL(true)}>
                 <RiAddLine className='mr-1 h-4 w-4' />
-                {t('outreach.kol.add')}
+                {t('leads.outreach.kol.add')}
               </Button>
             </>
           )}
@@ -520,14 +520,14 @@ const OutreachPage: FC = () => {
             <>
               <Button variant='secondary' onClick={() => setShowImport(true)}>
                 <RiUploadLine className='mr-1 h-4 w-4' />
-                {t('outreach.import.title')}
+                {t('leads.outreach.import.title')}
               </Button>
               <Button variant='secondary' onClick={() => refetchAccounts()}>
                 <RiRefreshLine className='h-4 w-4' />
               </Button>
               <Button variant='primary' onClick={() => setShowCreateAccount(true)}>
                 <RiAddLine className='mr-1 h-4 w-4' />
-                {t('outreach.account.add')}
+                {t('leads.outreach.account.add')}
               </Button>
             </>
           )}
@@ -570,12 +570,12 @@ const OutreachPage: FC = () => {
                       </div>
                       <div className='mb-3 grid grid-cols-2 gap-2 text-sm'>
                         <div>
-                          <span className='text-text-tertiary'>{t('outreach.kol.followers')}:</span>
+                          <span className='text-text-tertiary'>{t('leads.outreach.kol.followers')}:</span>
                           <span className='ml-1 text-text-secondary'>{kol.follower_count.toLocaleString()}</span>
                         </div>
                         {kol.niche && (
                           <div>
-                            <span className='text-text-tertiary'>{t('outreach.kol.niche')}:</span>
+                            <span className='text-text-tertiary'>{t('leads.outreach.kol.niche')}:</span>
                             <span className='ml-1 text-text-secondary'>{kol.niche}</span>
                           </div>
                         )}
@@ -588,7 +588,7 @@ const OutreachPage: FC = () => {
                           loading={scrapeFollowers.isPending}
                         >
                           <RiDownloadLine className='mr-1 h-3 w-3' />
-                          {t('outreach.kol.scrapeFollowers')}
+                          {t('leads.outreach.kol.scrapeFollowers')}
                         </Button>
                         {kol.profile_url && (
                           <Button
@@ -611,7 +611,7 @@ const OutreachPage: FC = () => {
                   ))}
                   {(!kolsData?.data || kolsData.data.length === 0) && (
                     <div className='col-span-full py-12 text-center'>
-                      <p className='text-text-tertiary'>{t('outreach.empty.kols')}</p>
+                      <p className='text-text-tertiary'>{t('leads.outreach.empty.kols')}</p>
                     </div>
                   )}
                 </div>
@@ -642,12 +642,12 @@ const OutreachPage: FC = () => {
                   <table className='w-full'>
                     <thead>
                       <tr className='border-b border-divider-subtle'>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('outreach.account.username')}</th>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('outreach.account.platform')}</th>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('outreach.account.status')}</th>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('outreach.account.dailyUsage')}</th>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('outreach.account.lifetime')}</th>
-                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('outreach.account.actions')}</th>
+                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.outreach.account.username')}</th>
+                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.outreach.account.platform')}</th>
+                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.outreach.account.status')}</th>
+                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.outreach.account.dailyUsage')}</th>
+                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.outreach.account.lifetime')}</th>
+                        <th className='px-4 py-3 text-left text-xs font-medium text-text-tertiary'>{t('leads.outreach.account.actions')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -677,7 +677,7 @@ const OutreachPage: FC = () => {
                                 size='small'
                                 onClick={() => handleHealthCheck(account.id)}
                                 loading={healthCheck.isPending}
-                                title={t('outreach.account.healthCheck')}
+                                title={t('leads.outreach.account.healthCheck')}
                               >
                                 <RiHeartPulseLine className='h-3 w-3' />
                               </Button>
@@ -696,7 +696,7 @@ const OutreachPage: FC = () => {
                   </table>
                   {(!accountsData?.data || accountsData.data.length === 0) && (
                     <div className='py-12 text-center'>
-                      <p className='text-text-tertiary'>{t('outreach.empty.accounts')}</p>
+                      <p className='text-text-tertiary'>{t('leads.outreach.empty.accounts')}</p>
                     </div>
                   )}
                 </div>
@@ -715,7 +715,7 @@ const OutreachPage: FC = () => {
       </div>
 
       {/* Modals */}
-      <Modal isShow={showCreateKOL} onClose={() => setShowCreateKOL(false)} title={t('outreach.kol.add')} className='!max-w-[480px]'>
+      <Modal isShow={showCreateKOL} onClose={() => setShowCreateKOL(false)} title={t('leads.outreach.kol.add')} className='!max-w-[480px]'>
         <KOLForm
           onSubmit={handleCreateKOL}
           onCancel={() => setShowCreateKOL(false)}
@@ -723,7 +723,7 @@ const OutreachPage: FC = () => {
         />
       </Modal>
 
-      <Modal isShow={showCreateAccount} onClose={() => setShowCreateAccount(false)} title={t('outreach.account.add')} className='!max-w-[480px]'>
+      <Modal isShow={showCreateAccount} onClose={() => setShowCreateAccount(false)} title={t('leads.outreach.account.add')} className='!max-w-[480px]'>
         <AccountForm
           onSubmit={handleCreateAccount}
           onCancel={() => setShowCreateAccount(false)}
@@ -744,8 +744,8 @@ const OutreachPage: FC = () => {
         isShow={!!kolToDelete}
         onCancel={() => setKolToDelete(null)}
         onConfirm={handleDeleteKOL}
-        title={t('outreach.confirm.deleteKol')}
-        content={t('outreach.confirm.deleteKolDesc')}
+        title={t('leads.outreach.confirm.deleteKol')}
+        content={t('leads.outreach.confirm.deleteKolDesc')}
         type='warning'
       />
 
@@ -753,8 +753,8 @@ const OutreachPage: FC = () => {
         isShow={!!accountToDelete}
         onCancel={() => setAccountToDelete(null)}
         onConfirm={handleDeleteAccount}
-        title={t('outreach.confirm.deleteAccount')}
-        content={t('outreach.confirm.deleteAccountDesc')}
+        title={t('leads.outreach.confirm.deleteAccount')}
+        content={t('leads.outreach.confirm.deleteAccountDesc')}
         type='warning'
       />
     </div>

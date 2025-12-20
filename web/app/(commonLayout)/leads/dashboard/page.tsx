@@ -74,18 +74,18 @@ const FunnelChart: FC<FunnelChartProps> = ({ data }) => {
   const { t } = useTranslation()
 
   const stages = [
-    { label: t('dashboard.funnel.scraped'), value: data.total_followers, color: 'bg-util-colors-gray-gray-300' },
-    { label: t('dashboard.funnel.followed'), value: data.followed, color: 'bg-util-colors-blue-blue-400' },
-    { label: t('dashboard.funnel.followBacks'), value: data.follow_backs, color: 'bg-util-colors-indigo-indigo-400' },
-    { label: t('dashboard.funnel.dmSent'), value: data.dm_sent, color: 'bg-util-colors-orange-orange-400' },
-    { label: t('dashboard.funnel.converted'), value: data.converted, color: 'bg-util-colors-green-green-500' },
+    { label: t('leads.dashboard.funnel.scraped'), value: data.total_followers, color: 'bg-util-colors-gray-gray-300' },
+    { label: t('leads.dashboard.funnel.followed'), value: data.followed, color: 'bg-util-colors-blue-blue-400' },
+    { label: t('leads.dashboard.funnel.followBacks'), value: data.follow_backs, color: 'bg-util-colors-indigo-indigo-400' },
+    { label: t('leads.dashboard.funnel.dmSent'), value: data.dm_sent, color: 'bg-util-colors-orange-orange-400' },
+    { label: t('leads.dashboard.funnel.converted'), value: data.converted, color: 'bg-util-colors-green-green-500' },
   ]
 
   const maxValue = Math.max(...stages.map(s => s.value), 1)
 
   return (
     <div className='rounded-xl border border-divider-subtle bg-components-panel-bg p-5'>
-      <h3 className='mb-4 font-medium text-text-secondary'>{t('dashboard.funnel.title')}</h3>
+      <h3 className='mb-4 font-medium text-text-secondary'>{t('leads.dashboard.funnel.title')}</h3>
       <div className='space-y-3'>
         {stages.map((stage, index) => {
           const width = (stage.value / maxValue) * 100
@@ -108,15 +108,15 @@ const FunnelChart: FC<FunnelChartProps> = ({ data }) => {
       <div className='mt-4 grid grid-cols-3 gap-4 border-t border-divider-subtle pt-4'>
         <div className='text-center'>
           <div className='text-lg font-semibold text-util-colors-blue-blue-600'>{data.follow_back_rate}%</div>
-          <div className='text-xs text-text-tertiary'>{t('dashboard.rate.followBack')}</div>
+          <div className='text-xs text-text-tertiary'>{t('leads.dashboard.rate.followBack')}</div>
         </div>
         <div className='text-center'>
           <div className='text-lg font-semibold text-util-colors-orange-orange-600'>{data.dm_response_rate}%</div>
-          <div className='text-xs text-text-tertiary'>{t('dashboard.rate.dmResponse')}</div>
+          <div className='text-xs text-text-tertiary'>{t('leads.dashboard.rate.dmResponse')}</div>
         </div>
         <div className='text-center'>
           <div className='text-lg font-semibold text-util-colors-green-green-600'>{data.conversion_rate}%</div>
-          <div className='text-xs text-text-tertiary'>{t('dashboard.rate.conversion')}</div>
+          <div className='text-xs text-text-tertiary'>{t('leads.dashboard.rate.conversion')}</div>
         </div>
       </div>
     </div>
@@ -139,39 +139,39 @@ const AIStatusCard: FC<AIStatusCardProps> = ({ conversationAI, followerScraper }
     if (!enabled) {
       return (
         <span className='inline-flex items-center rounded-md bg-util-colors-gray-gray-100 px-2 py-1 text-xs text-util-colors-gray-gray-600'>
-          {t('dashboard.ai.disabled')}
+          {t('leads.dashboard.ai.disabled')}
         </span>
       )
     }
     if (!configured) {
       return (
         <span className='inline-flex items-center rounded-md bg-util-colors-orange-orange-50 px-2 py-1 text-xs text-util-colors-orange-orange-600'>
-          {t('dashboard.ai.notConfigured')}
+          {t('leads.dashboard.ai.notConfigured')}
         </span>
       )
     }
     return (
       <span className='inline-flex items-center rounded-md bg-util-colors-green-green-50 px-2 py-1 text-xs text-util-colors-green-green-600'>
-        {t('dashboard.ai.ready')}
+        {t('leads.dashboard.ai.ready')}
       </span>
     )
   }
 
   return (
     <div className='rounded-xl border border-divider-subtle bg-components-panel-bg p-5'>
-      <h3 className='mb-4 font-medium text-text-secondary'>{t('dashboard.ai.title')}</h3>
+      <h3 className='mb-4 font-medium text-text-secondary'>{t('leads.dashboard.ai.title')}</h3>
       <div className='space-y-3'>
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-2'>
             <RiRobotLine className='h-4 w-4 text-text-tertiary' />
-            <span className='text-sm text-text-secondary'>{t('dashboard.ai.conversationAI')}</span>
+            <span className='text-sm text-text-secondary'>{t('leads.dashboard.ai.conversationAI')}</span>
           </div>
           <StatusBadge enabled={conversationAI.enabled} configured={conversationAI.configured} />
         </div>
         <div className='flex items-center justify-between'>
           <div className='flex items-center gap-2'>
             <RiUserFollowLine className='h-4 w-4 text-text-tertiary' />
-            <span className='text-sm text-text-secondary'>{t('dashboard.ai.followerScraper')}</span>
+            <span className='text-sm text-text-secondary'>{t('leads.dashboard.ai.followerScraper')}</span>
           </div>
           <StatusBadge enabled={followerScraper.enabled} configured={followerScraper.configured} />
         </div>
@@ -186,7 +186,7 @@ const AIStatusCard: FC<AIStatusCardProps> = ({ conversationAI, followerScraper }
 
 const DashboardPage: FC = () => {
   const { t } = useTranslation()
-  useDocumentTitle(t('dashboard.title'))
+  useDocumentTitle(t('leads.dashboard.title'))
 
   const { data: overview, isLoading, refetch } = useDashboardOverview()
   const { data: aiStatus } = useAIStatus()
@@ -204,7 +204,7 @@ const DashboardPage: FC = () => {
     <div className='relative flex h-0 shrink-0 grow flex-col overflow-y-auto bg-background-body'>
       {/* Header */}
       <div className='sticky top-0 z-10 flex items-center justify-between bg-background-body px-12 pb-5 pt-7'>
-        <h1 className='text-xl font-semibold text-text-primary'>{t('dashboard.title')}</h1>
+        <h1 className='text-xl font-semibold text-text-primary'>{t('leads.dashboard.title')}</h1>
         <Button variant='secondary' onClick={() => refetch()}>
           <RiRefreshLine className='mr-1 h-4 w-4' />
           {t('common.operation.refresh')}
@@ -217,27 +217,27 @@ const DashboardPage: FC = () => {
         <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4'>
           <StatCard
             icon={<RiGroupLine className='h-5 w-5' />}
-            label={t('dashboard.stats.targetKols')}
+            label={t('leads.dashboard.stats.targetKols')}
             value={overview?.kols.total || 0}
             color='blue'
           />
           <StatCard
             icon={<RiHeartPulseLine className='h-5 w-5' />}
-            label={t('dashboard.stats.healthyAccounts')}
+            label={t('leads.dashboard.stats.healthyAccounts')}
             value={`${overview?.accounts.healthy || 0}/${overview?.accounts.total || 0}`}
             subtext={`${overview?.accounts.health_rate || 0}% healthy`}
             color={overview && overview.accounts.health_rate >= 80 ? 'green' : 'orange'}
           />
           <StatCard
             icon={<RiMessage2Line className='h-5 w-5' />}
-            label={t('dashboard.stats.activeConversations')}
+            label={t('leads.dashboard.stats.activeConversations')}
             value={overview?.conversations.active || 0}
             subtext={`${overview?.conversations.needs_human || 0} needs human`}
             color={overview && overview.conversations.needs_human > 0 ? 'orange' : 'blue'}
           />
           <StatCard
             icon={<RiCheckboxCircleLine className='h-5 w-5' />}
-            label={t('dashboard.stats.conversions')}
+            label={t('leads.dashboard.stats.conversions')}
             value={overview?.funnel.converted || 0}
             subtext={`${overview?.funnel.conversion_rate || 0}% conversion rate`}
             color='green'
@@ -263,7 +263,7 @@ const DashboardPage: FC = () => {
 
             {/* Target KOLs Quick View */}
             <div className='rounded-xl border border-divider-subtle bg-components-panel-bg p-5'>
-              <h3 className='mb-4 font-medium text-text-secondary'>{t('dashboard.kols.title')}</h3>
+              <h3 className='mb-4 font-medium text-text-secondary'>{t('leads.dashboard.kols.title')}</h3>
               {kols?.data?.length
                 ? (
                   <div className='space-y-3'>
@@ -283,22 +283,22 @@ const DashboardPage: FC = () => {
                   </div>
                 )
                 : (
-                  <p className='text-sm text-text-tertiary'>{t('dashboard.kols.empty')}</p>
+                  <p className='text-sm text-text-tertiary'>{t('leads.dashboard.kols.empty')}</p>
                 )}
             </div>
 
             {/* Quick Stats */}
             <div className='rounded-xl border border-divider-subtle bg-components-panel-bg p-5'>
-              <h3 className='mb-4 font-medium text-text-secondary'>{t('dashboard.quickStats.title')}</h3>
+              <h3 className='mb-4 font-medium text-text-secondary'>{t('leads.dashboard.quickStats.title')}</h3>
               <div className='space-y-2 text-sm'>
                 <div className='flex items-center justify-between'>
-                  <span className='text-text-tertiary'>{t('dashboard.quickStats.totalFollowers')}</span>
+                  <span className='text-text-tertiary'>{t('leads.dashboard.quickStats.totalFollowers')}</span>
                   <span className='font-medium text-text-secondary'>
                     {overview?.funnel.total_followers.toLocaleString() || 0}
                   </span>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <span className='text-text-tertiary'>{t('dashboard.quickStats.totalConversations')}</span>
+                  <span className='text-text-tertiary'>{t('leads.dashboard.quickStats.totalConversations')}</span>
                   <span className='font-medium text-text-secondary'>
                     {overview?.conversations.total.toLocaleString() || 0}
                   </span>
