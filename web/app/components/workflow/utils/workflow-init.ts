@@ -239,8 +239,12 @@ export const initialNodes = (originNodes: Node[], originEdges: Edge[]) => {
         ]
       }
       const cases = (node.data as IfElseNodeType).cases || []
+      // Ensure at least one case exists for valid branch structure
+      const caseBranches = cases.length > 0
+        ? cases.map(item => ({ id: item.case_id, name: '' }))
+        : [{ id: 'true', name: '' }]
       node.data._targetBranches = branchNameCorrect([
-        ...cases.map(item => ({ id: item.case_id, name: '' })),
+        ...caseBranches,
         { id: 'false', name: '' },
       ])
       // delete conditions and logical_operator if cases is not empty
