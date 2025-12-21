@@ -1,0 +1,75 @@
+identity:
+  name: generate_message
+  author: Dify-Leads
+  label:
+    en_US: Generate Outreach Message
+    zh_Hans: 生成外展消息
+description:
+  human:
+    en_US: Generate personalized outreach messages using spintax templates for DM automation
+    zh_Hans: 使用Spintax模板生成个性化的外展消息，用于DM自动化
+  llm: Generate a personalized outreach message for social media DM. Use this when you need to create engaging messages for potential leads.
+parameters:
+  - name: template_category
+    type: select
+    required: true
+    label:
+      en_US: Message Category
+      zh_Hans: 消息类别
+    human_description:
+      en_US: Type of message to generate
+      zh_Hans: 要生成的消息类型
+    llm_description: The category of message - opening for first contact, follow_up for subsequent messages, conversion for getting them to join
+    form: llm
+    options:
+      - value: opening
+        label:
+          en_US: Opening Message
+          zh_Hans: 开场消息
+      - value: follow_up
+        label:
+          en_US: Follow-up Message
+          zh_Hans: 跟进消息
+      - value: conversion
+        label:
+          en_US: Conversion Message
+          zh_Hans: 转化消息
+      - value: objection
+        label:
+          en_US: Objection Handling
+          zh_Hans: 异议处理
+  - name: follower_name
+    type: string
+    required: false
+    label:
+      en_US: Follower Name
+      zh_Hans: 粉丝名称
+    human_description:
+      en_US: Name of the person to message
+      zh_Hans: 要发送消息的人的名称
+    llm_description: The name or username of the target follower
+    form: llm
+    default: friend
+  - name: kol_name
+    type: string
+    required: false
+    label:
+      en_US: KOL Name
+      zh_Hans: KOL名称
+    human_description:
+      en_US: Name of the KOL or influencer
+      zh_Hans: KOL或网红的名称
+    llm_description: The name of the KOL whose followers we are targeting
+    form: llm
+    default: our team
+  - name: whatsapp_link
+    type: string
+    required: false
+    label:
+      en_US: WhatsApp Link
+      zh_Hans: WhatsApp链接
+    human_description:
+      en_US: WhatsApp group invite link
+      zh_Hans: WhatsApp群组邀请链接
+    llm_description: The WhatsApp group invite link to include in conversion messages
+    form: form

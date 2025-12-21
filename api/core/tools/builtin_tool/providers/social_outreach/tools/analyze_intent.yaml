@@ -1,0 +1,23 @@
+identity:
+  name: analyze_intent
+  author: Dify-Leads
+  label:
+    en_US: Analyze Message Intent
+    zh_Hans: 分析消息意图
+description:
+  human:
+    en_US: Analyze the intent of an incoming message to determine appropriate response
+    zh_Hans: 分析收到消息的意图，以确定适当的回复
+  llm: Analyze the intent of an incoming DM message. Returns the detected intent (greeting, interest, objection, etc.) to help decide the next action.
+parameters:
+  - name: message
+    type: string
+    required: true
+    label:
+      en_US: Message Content
+      zh_Hans: 消息内容
+    human_description:
+      en_US: The incoming message to analyze
+      zh_Hans: 要分析的收到消息
+    llm_description: The content of the incoming message from the potential lead
+    form: llm

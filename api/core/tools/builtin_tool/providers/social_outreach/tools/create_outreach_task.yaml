@@ -1,0 +1,84 @@
+identity:
+  name: create_outreach_task
+  author: Dify-Leads
+  label:
+    en_US: Create Outreach Task
+    zh_Hans: 创建外展任务
+description:
+  human:
+    en_US: Create a new outreach task for automated follow/DM operations
+    zh_Hans: 创建新的外展任务用于自动化关注/DM操作
+  llm: Create an outreach task that will automatically follow or DM potential leads. The task will be executed asynchronously with rate limiting.
+parameters:
+  - name: task_type
+    type: select
+    required: true
+    label:
+      en_US: Task Type
+      zh_Hans: 任务类型
+    human_description:
+      en_US: Type of outreach operation
+      zh_Hans: 外展操作类型
+    llm_description: The type of outreach - follow only, dm only, or follow then dm
+    form: llm
+    options:
+      - value: follow
+        label:
+          en_US: Follow Only
+          zh_Hans: 仅关注
+      - value: dm
+        label:
+          en_US: DM Only
+          zh_Hans: 仅私信
+      - value: follow_dm
+        label:
+          en_US: Follow + DM
+          zh_Hans: 关注后私信
+  - name: target_kol_id
+    type: string
+    required: true
+    label:
+      en_US: Target KOL ID
+      zh_Hans: 目标KOL ID
+    human_description:
+      en_US: ID of the target KOL whose followers to reach
+      zh_Hans: 要联系粉丝的目标KOL ID
+    llm_description: The ID of the target KOL
+    form: llm
+  - name: target_count
+    type: number
+    required: false
+    label:
+      en_US: Target Count
+      zh_Hans: 目标数量
+    human_description:
+      en_US: Number of followers to target
+      zh_Hans: 要联系的粉丝数量
+    form: form
+    default: 50
+    min: 1
+    max: 500
+  - name: priority
+    type: select
+    required: false
+    label:
+      en_US: Priority
+      zh_Hans: 优先级
+    human_description:
+      en_US: Task priority level
+      zh_Hans: 任务优先级
+    form: form
+    default: normal
+    options:
+      - value: low
+        label:
+          en_US: Low
+          zh_Hans: 低
+      - value: normal
+        label:
+          en_US: Normal
+          zh_Hans: 普通
+      - value: high
+        label:
+          en_US: High
+          zh_Hans: 高

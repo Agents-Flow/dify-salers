@@ -1,0 +1,66 @@
+identity:
+  name: process_conversation
+  author: Dify-Leads
+  label:
+    en_US: Process Conversation
+    zh_Hans: 处理对话
+description:
+  human:
+    en_US: Process an incoming message through the AI conversation flow and generate appropriate response
+    zh_Hans: 通过AI对话流处理收到的消息并生成适当的回复
+  llm: Process a conversation message through the SOP-based AI flow. Returns the AI-generated response based on the conversation state and detected intent.
+parameters:
+  - name: conversation_id
+    type: string
+    required: true
+    label:
+      en_US: Conversation ID
+      zh_Hans: 对话ID
+    human_description:
+      en_US: Unique identifier for this conversation
+      zh_Hans: 此对话的唯一标识符
+    llm_description: The unique ID of the conversation session
+    form: llm
+  - name: incoming_message
+    type: string
+    required: true
+    label:
+      en_US: Incoming Message
+      zh_Hans: 收到的消息
+    human_description:
+      en_US: The message received from the lead
+      zh_Hans: 从潜在客户收到的消息
+    llm_description: The content of the incoming message to process
+    form: llm
+  - name: follower_name
+    type: string
+    required: false
+    label:
+      en_US: Follower Name
+      zh_Hans: 粉丝名称
+    human_description:
+      en_US: Name of the follower for personalization
+      zh_Hans: 用于个性化的粉丝名称
+    form: llm
+    default: there
+  - name: kol_name
+    type: string
+    required: false
+    label:
+      en_US: KOL Name
+      zh_Hans: KOL名称
+    human_description:
+      en_US: Name of the KOL being promoted
+      zh_Hans: 正在推广的KOL名称
+    form: llm
+    default: our team
+  - name: whatsapp_link
+    type: string
+    required: false
+    label:
+      en_US: WhatsApp Link
+      zh_Hans: WhatsApp链接
+    human_description:
+      en_US: WhatsApp group invite link
+      zh_Hans: WhatsApp群组邀请链接
+    form: form

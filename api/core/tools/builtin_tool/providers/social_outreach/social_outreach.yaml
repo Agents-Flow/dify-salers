@@ -1,0 +1,27 @@
+identity:
+  author: Dify-Leads
+  name: social_outreach
+  label:
+    en_US: Social Outreach
+    zh_Hans: 社交外展
+  description:
+    en_US: AI-powered social media outreach tools for Instagram and X platform automation
+    zh_Hans: AI驱动的社交媒体外展工具，支持Instagram和X平台自动化
+  icon: icon.svg
+  tags:
+    - social
+    - productivity
+    - marketing
+credentials_for_provider:
+  apify_api_key:
+    type: secret-input
+    required: false
+    label:
+      en_US: Apify API Key
+      zh_Hans: Apify API密钥
+    placeholder:
+      en_US: Enter your Apify API key
+      zh_Hans: 输入您的Apify API密钥
+    help:
+      en_US: Required for scraping followers from social platforms
+      zh_Hans: 用于从社交平台抓取粉丝数据

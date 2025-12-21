@@ -1,0 +1,57 @@
+identity:
+  name: scrape_followers
+  author: Dify-Leads
+  label:
+    en_US: Scrape KOL Followers
+    zh_Hans: 抓取KOL粉丝
+description:
+  human:
+    en_US: Scrape followers from a KOL's Instagram or X account for lead generation
+    zh_Hans: 从KOL的Instagram或X账号抓取粉丝用于获客
+  llm: Scrape followers from a social media KOL account. Returns a list of potential leads that can be targeted for outreach.
+parameters:
+  - name: platform
+    type: select
+    required: true
+    label:
+      en_US: Platform
+      zh_Hans: 平台
+    human_description:
+      en_US: Social media platform
+      zh_Hans: 社交媒体平台
+    llm_description: The social media platform - instagram or x
+    form: llm
+    options:
+      - value: instagram
+        label:
+          en_US: Instagram
+          zh_Hans: Instagram
+      - value: x
+        label:
+          en_US: X (Twitter)
+          zh_Hans: X (Twitter)
+  - name: username
+    type: string
+    required: true
+    label:
+      en_US: KOL Username
+      zh_Hans: KOL用户名
+    human_description:
+      en_US: Username of the KOL to scrape followers from
+      zh_Hans: 要抓取粉丝的KOL用户名
+    llm_description: The username of the KOL account to scrape followers from
+    form: llm
+  - name: count
+    type: number
+    required: false
+    label:
+      en_US: Number of Followers
+      zh_Hans: 粉丝数量
+    human_description:
+      en_US: Number of followers to scrape (max 100)
+      zh_Hans: 要抓取的粉丝数量（最多100）
+    llm_description: How many followers to scrape, defaults to 20
+    form: form
+    default: 20
+    min: 1
+    max: 100
