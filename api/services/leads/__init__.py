@@ -3,6 +3,7 @@ Lead acquisition services module.
 """
 
 # Advanced features
+from .analytics_service import LeadsAnalyticsService
 from .antidetect_browser_service import (
     AntiDetectBrowserError,
     AntiDetectBrowserService,
@@ -23,6 +24,9 @@ from .automation_executor_service import (
     ExecutionStatus,
     create_automation_executor_service,
 )
+
+# Configuration and workflow binding services
+from .config_service import LeadsConfigService
 from .content_sync_service import (
     ContentSyncError,
     ContentSyncJob,
@@ -117,6 +121,8 @@ from .timezone_scheduler_service import (
     TimezoneWindow,
     create_timezone_scheduler_service,
 )
+from .workflow_binding_service import WorkflowBindingService
+from .workflow_result_handler import WorkflowResultHandler
 
 __all__ = [
     # Smart Scheduler
@@ -152,6 +158,9 @@ __all__ = [
     "IntentAnalysisError",
     "IntentAnalysisResult",
     "IntentAnalysisService",
+    # Configuration
+    "LeadsAnalyticsService",
+    "LeadsConfigService",
     # Proxy Pool
     "NoAvailableProxyError",
     "OutreachTaskService",
@@ -178,6 +187,9 @@ __all__ = [
     "TargetKOLService",
     "TimezoneSchedulerService",
     "TimezoneWindow",
+    # Workflow Binding
+    "WorkflowBindingService",
+    "WorkflowResultHandler",
     "create_antidetect_browser_service",
     "create_content_sync_service",
     "create_crawler_service",

@@ -790,3 +790,112 @@ class OutreachTask(TypeBase):
 
     def __repr__(self) -> str:
         return f"<OutreachTask(id={self.id}, name={self.name}, status={self.status})>"
+
+
+class LeadsConfigKey(StrEnum):
+    """Configuration keys for leads module."""
+
+    APIFY_API_KEY = "apify_api_key"
+    PROXY_POOL_SETTINGS = "proxy_pool_settings"
+    BROWSER_PROVIDER = "browser_provider"
+    BROWSER_CREDENTIALS = "browser_credentials"
+    NOTIFICATION_SETTINGS = "notification_settings"
+    DEFAULT_MESSAGE_TEMPLATES = "default_message_templates"
+
+
+class LeadsActionType(StrEnum):
+    """Action types for workflow binding."""
+
+    SCRAPE_FOLLOWERS = "scrape_followers"
+    SEND_FOLLOW = "send_follow"
+    CHECK_FOLLOWBACK = "check_followback"
+    SEND_DM = "send_dm"
+    PROCESS_CONVERSATION = "process_conversation"
+    GENERATE_MESSAGE = "generate_message"
+
+
+class LeadsConfig(TypeBase):
+    """
+    Leads module configuration storage.
+    Stores tenant-specific settings for API keys, proxies, browser configs, etc.
+    """
+
+    __tablename__ = "leads_configs"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="leads_config_pkey"),
+        sa.Index("leads_config_tenant_idx", "tenant_id"),
+        sa.UniqueConstraint("tenant_id", "config_key", name="unique_leads_config_tenant_key"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    tenant_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    config_key: Mapped[str] = mapped_column(String(100), nullable=False)
+    config_value: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    is_encrypted: Mapped[bool] = mapped_column(
+        sa.Boolean, default=False, server_default=sa.text("false")
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<LeadsConfig(id={self.id}, key={self.config_key})>"
+
+
+class LeadsWorkflowBinding(TypeBase):
+    """
+    Bind leads actions to Dify apps.
+    Maps action types (like send_dm, check_followback) to specific Dify Workflows or Agents.
+    """
+
+    __tablename__ = "leads_workflow_bindings"
+    __table_args__ = (
+        sa.PrimaryKeyConstraint("id", name="leads_workflow_binding_pkey"),
+        sa.Index("leads_workflow_binding_tenant_idx", "tenant_id"),
+        sa.UniqueConstraint("tenant_id", "action_type", name="unique_leads_binding_tenant_action"),
+    )
+
+    id: Mapped[str] = mapped_column(
+        StringUUID,
+        default=lambda: str(uuid4()),
+        init=False,
+    )
+    tenant_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    action_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    app_id: Mapped[str] = mapped_column(StringUUID, nullable=False)
+    app_mode: Mapped[str] = mapped_column(String(50), nullable=False)  # workflow, agent-chat, completion
+    is_enabled: Mapped[bool] = mapped_column(
+        sa.Boolean, default=True, server_default=sa.text("true")
+    )
+    config: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    created_by: Mapped[str | None] = mapped_column(StringUUID, nullable=True, default=None)
+    created_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        init=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        sa.DateTime,
+        nullable=False,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+        init=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<LeadsWorkflowBinding(id={self.id}, action={self.action_type}, app={self.app_id})>"

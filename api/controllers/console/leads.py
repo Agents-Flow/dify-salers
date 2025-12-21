@@ -1141,3 +1141,421 @@ class AppTemplateDetailApi(Resource):
             }
         except FileNotFoundError:
             raise NotFound(f"Template not found: {template_name}")
+
+
+# =============================================================================
+# Configuration APIs
+# =============================================================================
+
+
+@console_ns.route("/leads/configs")
+class LeadsConfigListApi(Resource):
+    """List all leads configurations."""
+
+    @console_ns.doc("list_leads_configs")
+    @console_ns.doc(description="Get all configuration values for the tenant")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get all configuration values."""
+        from services.leads import LeadsConfigService
+
+        _, tenant_id = current_account_with_tenant()
+        configs = LeadsConfigService.get_all_configs(tenant_id)
+        schema = LeadsConfigService.get_config_schema()
+        return {
+            "configs": configs,
+            "schema": schema,
+        }
+
+
+@console_ns.route("/leads/configs/<string:config_key>")
+class LeadsConfigApi(Resource):
+    """Get or update a specific configuration."""
+
+    @console_ns.doc("get_leads_config")
+    @console_ns.doc(description="Get a specific configuration value")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self, config_key: str):
+        """Get a specific configuration value."""
+        from services.leads import LeadsConfigService
+
+        _, tenant_id = current_account_with_tenant()
+        config = LeadsConfigService.get_config(tenant_id, config_key)
+        if config is None:
+            return {"config_key": config_key, "config_value": None}
+        return {"config_key": config_key, "config_value": config}
+
+    @console_ns.doc("update_leads_config")
+    @console_ns.doc(description="Update a configuration value")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def put(self, config_key: str):
+        """Update a configuration value."""
+        from services.leads import LeadsConfigService
+
+        account, tenant_id = current_account_with_tenant()
+        data = request.get_json() or {}
+
+        if "config_value" not in data:
+            raise BadRequest("config_value is required")
+
+        LeadsConfigService.set_config(
+            tenant_id=tenant_id,
+            config_key=config_key,
+            config_value=data["config_value"],
+            created_by=account.id,
+        )
+        return {"result": "success", "config_key": config_key}
+
+    @console_ns.doc("delete_leads_config")
+    @console_ns.doc(description="Delete a configuration value")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def delete(self, config_key: str):
+        """Delete a configuration value."""
+        from services.leads import LeadsConfigService
+
+        _, tenant_id = current_account_with_tenant()
+        success = LeadsConfigService.delete_config(tenant_id, config_key)
+        if not success:
+            raise NotFound(f"Config not found: {config_key}")
+        return {"result": "success"}, 204
+
+
+@console_ns.route("/leads/configs/test-connection")
+class LeadsConfigTestConnectionApi(Resource):
+    """Test API connections."""
+
+    @console_ns.doc("test_leads_connection")
+    @console_ns.doc(description="Test connection to configured services")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """Test connection to Apify API."""
+        from services.leads import LeadsConfigService
+
+        _, tenant_id = current_account_with_tenant()
+        result = LeadsConfigService.test_apify_connection(tenant_id)
+        return result
+
+
+# =============================================================================
+# Workflow Binding APIs
+# =============================================================================
+
+
+@console_ns.route("/leads/workflow-bindings")
+class WorkflowBindingListApi(Resource):
+    """List and create workflow bindings."""
+
+    @console_ns.doc("list_workflow_bindings")
+    @console_ns.doc(description="Get all workflow bindings for the tenant")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get all workflow bindings."""
+        from services.leads import WorkflowBindingService
+
+        _, tenant_id = current_account_with_tenant()
+        bindings = WorkflowBindingService.get_bindings(tenant_id)
+        action_types = WorkflowBindingService.get_action_types()
+        return {
+            "bindings": bindings,
+            "action_types": action_types,
+        }
+
+    @console_ns.doc("create_workflow_binding")
+    @console_ns.doc(description="Create or update a workflow binding")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """Create or update a workflow binding."""
+        from services.leads import WorkflowBindingService
+
+        account, tenant_id = current_account_with_tenant()
+        data = request.get_json() or {}
+
+        required_fields = ["action_type", "app_id", "app_mode"]
+        for field in required_fields:
+            if not data.get(field):
+                raise BadRequest(f"{field} is required")
+
+        binding = WorkflowBindingService.bind_app(
+            tenant_id=tenant_id,
+            action_type=data["action_type"],
+            app_id=data["app_id"],
+            app_mode=data["app_mode"],
+            config=data.get("config"),
+            created_by=account.id,
+        )
+        return binding, 201
+
+
+@console_ns.route("/leads/workflow-bindings/<string:action_type>")
+class WorkflowBindingApi(Resource):
+    """Get or delete a specific workflow binding."""
+
+    @console_ns.doc("get_workflow_binding")
+    @console_ns.doc(description="Get a specific workflow binding")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self, action_type: str):
+        """Get a specific workflow binding."""
+        from services.leads import WorkflowBindingService
+
+        _, tenant_id = current_account_with_tenant()
+        binding = WorkflowBindingService.get_binding(tenant_id, action_type)
+        if not binding:
+            raise NotFound(f"Binding not found: {action_type}")
+        return binding
+
+    @console_ns.doc("delete_workflow_binding")
+    @console_ns.doc(description="Delete a workflow binding")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def delete(self, action_type: str):
+        """Delete a workflow binding."""
+        from services.leads import WorkflowBindingService
+
+        _, tenant_id = current_account_with_tenant()
+        success = WorkflowBindingService.unbind_app(tenant_id, action_type)
+        if not success:
+            raise NotFound(f"Binding not found: {action_type}")
+        return {"result": "success"}, 204
+
+
+@console_ns.route("/leads/workflow-bindings/<string:action_type>/toggle")
+class WorkflowBindingToggleApi(Resource):
+    """Toggle workflow binding enabled status."""
+
+    @console_ns.doc("toggle_workflow_binding")
+    @console_ns.doc(description="Enable or disable a workflow binding")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self, action_type: str):
+        """Toggle binding enabled status."""
+        from services.leads import WorkflowBindingService
+
+        _, tenant_id = current_account_with_tenant()
+        data = request.get_json() or {}
+
+        is_enabled = data.get("is_enabled", True)
+        success = WorkflowBindingService.toggle_binding(tenant_id, action_type, is_enabled)
+        if not success:
+            raise NotFound(f"Binding not found: {action_type}")
+        return {"result": "success", "is_enabled": is_enabled}
+
+
+@console_ns.route("/leads/available-apps")
+class AvailableAppsApi(Resource):
+    """List Dify apps available for binding."""
+
+    @console_ns.doc("list_available_apps")
+    @console_ns.doc(description="Get list of Dify apps available for workflow binding")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get available Dify apps."""
+        from services.leads import WorkflowBindingService
+
+        _, tenant_id = current_account_with_tenant()
+        apps = WorkflowBindingService.get_available_apps(tenant_id)
+        return {"apps": apps, "total": len(apps)}
+
+
+# =============================================================================
+# Webhook APIs
+# =============================================================================
+
+
+@console_ns.route("/leads/webhook/workflow-result")
+class WorkflowResultWebhookApi(Resource):
+    """Receive workflow execution results."""
+
+    @console_ns.doc("receive_workflow_result")
+    @console_ns.doc(description="Receive and process workflow execution results")
+    def post(self):
+        """Receive workflow result and update leads data."""
+        from services.leads.workflow_result_handler import WorkflowResultHandler
+
+        data = request.get_json() or {}
+
+        if not data.get("action_type"):
+            raise BadRequest("action_type is required")
+
+        result = WorkflowResultHandler.handle_result(data)
+        return result
+
+
+@console_ns.route("/leads/webhook/incoming-message")
+class IncomingMessageWebhookApi(Resource):
+    """Receive incoming messages from followers."""
+
+    @console_ns.doc("receive_incoming_message")
+    @console_ns.doc(description="Record an incoming message from a follower")
+    def post(self):
+        """Record incoming message."""
+        from services.leads.workflow_result_handler import WorkflowResultHandler
+
+        data = request.get_json() or {}
+
+        if not data.get("conversation_id") or not data.get("content"):
+            raise BadRequest("conversation_id and content are required")
+
+        result = WorkflowResultHandler.record_incoming_message(
+            conversation_id=data["conversation_id"],
+            content=data["content"],
+            platform_message_id=data.get("platform_message_id"),
+        )
+        return result
+
+
+# =============================================================================
+# Analytics APIs
+# =============================================================================
+
+
+@console_ns.route("/leads/analytics/overview")
+class AnalyticsOverviewApi(Resource):
+    """Get dashboard overview analytics."""
+
+    @console_ns.doc("get_analytics_overview")
+    @console_ns.doc(description="Get dashboard overview statistics")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get dashboard overview."""
+        from services.leads import LeadsAnalyticsService
+
+        _, tenant_id = current_account_with_tenant()
+        overview = LeadsAnalyticsService.get_dashboard_overview(tenant_id)
+        return overview
+
+
+@console_ns.route("/leads/analytics/funnel")
+class AnalyticsFunnelApi(Resource):
+    """Get conversion funnel analytics."""
+
+    @console_ns.doc("get_analytics_funnel")
+    @console_ns.doc(description="Get conversion funnel statistics")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get conversion funnel."""
+        from services.leads import LeadsAnalyticsService
+
+        _, tenant_id = current_account_with_tenant()
+        target_kol_id = request.args.get("target_kol_id")
+
+        funnel = LeadsAnalyticsService.get_conversion_funnel(
+            tenant_id=tenant_id,
+            target_kol_id=target_kol_id,
+        )
+        return funnel
+
+
+@console_ns.route("/leads/analytics/kol-performance")
+class AnalyticsKOLPerformanceApi(Resource):
+    """Get KOL performance analytics."""
+
+    @console_ns.doc("get_kol_performance")
+    @console_ns.doc(description="Get performance metrics for each KOL")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get KOL performance."""
+        from services.leads import LeadsAnalyticsService
+
+        _, tenant_id = current_account_with_tenant()
+        performance = LeadsAnalyticsService.get_kol_performance(tenant_id)
+        return {"data": performance}
+
+
+@console_ns.route("/leads/analytics/account-health")
+class AnalyticsAccountHealthApi(Resource):
+    """Get account health analytics."""
+
+    @console_ns.doc("get_account_health")
+    @console_ns.doc(description="Get account health statistics")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get account health trend."""
+        from services.leads import LeadsAnalyticsService
+
+        _, tenant_id = current_account_with_tenant()
+        days = request.args.get("days", 7, type=int)
+        health = LeadsAnalyticsService.get_account_health_trend(tenant_id, days)
+        return {"data": health}
+
+
+@console_ns.route("/leads/analytics/daily-stats")
+class AnalyticsDailyStatsApi(Resource):
+    """Get daily statistics."""
+
+    @console_ns.doc("get_daily_stats")
+    @console_ns.doc(description="Get daily statistics for the past N days")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get daily stats."""
+        from services.leads import LeadsAnalyticsService
+
+        _, tenant_id = current_account_with_tenant()
+        days = request.args.get("days", 30, type=int)
+        stats = LeadsAnalyticsService.get_daily_stats(tenant_id, days)
+        return {"data": stats}
+
+
+@console_ns.route("/leads/analytics/task-summary")
+class AnalyticsTaskSummaryApi(Resource):
+    """Get task execution summary."""
+
+    @console_ns.doc("get_task_summary")
+    @console_ns.doc(description="Get outreach task execution summary")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get task execution summary."""
+        from services.leads import LeadsAnalyticsService
+
+        _, tenant_id = current_account_with_tenant()
+        summary = LeadsAnalyticsService.get_task_execution_summary(tenant_id)
+        return summary
+
+
+@console_ns.route("/leads/ai-status")
+class AIStatusApi(Resource):
+    """Get AI service status."""
+
+    @console_ns.doc("get_ai_status")
+    @console_ns.doc(description="Get AI service configuration status")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get AI status."""
+        from services.leads import LeadsAnalyticsService
+
+        _, tenant_id = current_account_with_tenant()
+        status = LeadsAnalyticsService.get_ai_status(tenant_id)
+        return status
