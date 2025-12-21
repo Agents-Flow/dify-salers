@@ -72,7 +72,7 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation, isSelected,
           </div>
         </div>
         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getStatusBadgeClass(conversation.status)}`}>
-          {t(`inbox.status.${conversation.status}`)}
+          {t(`leads.inbox.status.${conversation.status}`)}
         </span>
       </div>
       <div className='mt-2 flex items-center gap-4 text-xs text-text-tertiary'>
@@ -265,7 +265,7 @@ const ConversationDetail: FC<ConversationDetailProps> = ({ conversationId, onSta
         </div>
         <div className='flex items-center gap-2'>
           <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getStatusBadgeClass(conversation.status)}`}>
-            {t(`inbox.status.${conversation.status}`)}
+            {t(`leads.inbox.status.${conversation.status}`)}
           </span>
           {conversation.status === 'needs_human' && (
             <Button variant='primary' size='small' onClick={handleTakeover}>

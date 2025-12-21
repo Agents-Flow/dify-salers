@@ -565,7 +565,7 @@ const OutreachPage: FC = () => {
                           </div>
                         </div>
                         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getStatusBadgeClass(kol.status)}`}>
-                          {t(`outreach.status.${kol.status}`)}
+                          {t(`leads.outreach.status.${kol.status}`)}
                         </span>
                       </div>
                       <div className='mb-3 grid grid-cols-2 gap-2 text-sm'>
@@ -661,7 +661,7 @@ const OutreachPage: FC = () => {
                           </td>
                           <td className='px-4 py-3'>
                             <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${getStatusBadgeClass(account.status)}`}>
-                              {t(`outreach.accountStatus.${account.status}`)}
+                              {t(`leads.outreach.accountStatus.${account.status}`)}
                             </span>
                           </td>
                           <td className='px-4 py-3 text-sm text-text-tertiary'>
