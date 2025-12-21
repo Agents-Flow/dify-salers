@@ -1088,3 +1088,56 @@ class ScraperStatusApi(Resource):
             "enabled": SocialScraperService.APIFY_ENABLED,
             "has_token": bool(SocialScraperService.APIFY_API_TOKEN),
         }, 200
+
+
+# =============================================================================
+# App Templates APIs
+# =============================================================================
+
+
+@console_ns.route("/leads/app-templates")
+class AppTemplateListApi(Resource):
+    """List all available app templates."""
+
+    @console_ns.doc("list_app_templates")
+    @console_ns.doc(description="Get list of available outreach app templates")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get list of all available templates."""
+        from services.leads.app_templates import list_templates
+
+        templates = list_templates()
+        return {
+            "templates": templates,
+            "total": len(templates),
+        }
+
+
+@console_ns.route("/leads/app-templates/<string:template_name>")
+class AppTemplateDetailApi(Resource):
+    """Get a specific app template."""
+
+    @console_ns.doc("get_app_template")
+    @console_ns.doc(description="Get template YAML content for import")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self, template_name: str):
+        """Get template YAML content for import."""
+        from services.leads.app_templates import TEMPLATES, get_template_content
+
+        try:
+            content = get_template_content(template_name)
+            info = TEMPLATES.get(template_name, {})
+            return {
+                "name": template_name,
+                "title": info.get("title", template_name),
+                "mode": info.get("mode", "unknown"),
+                "description": info.get("description", ""),
+                "use_case": info.get("use_case", ""),
+                "yaml_content": content,
+            }
+        except FileNotFoundError:
+            raise NotFound(f"Template not found: {template_name}")
