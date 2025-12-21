@@ -2,6 +2,27 @@
 Lead acquisition services module.
 """
 
+# Advanced features
+from .antidetect_browser_service import (
+    AntiDetectBrowserError,
+    AntiDetectBrowserService,
+    BrowserNotConfiguredError,
+    BrowserProfile,
+    BrowserProvider,
+    BrowserSession,
+    ProfileNotFoundError,
+    SessionStartError,
+    create_antidetect_browser_service,
+)
+from .content_sync_service import (
+    ContentSyncError,
+    ContentSyncJob,
+    ContentSyncService,
+    ContentType,
+    ScrapedContent,
+    SyncStatus,
+    create_content_sync_service,
+)
 from .crawler_service import (
     CrawledComment,
     CrawlerExecutionError,
@@ -15,6 +36,25 @@ from .intent_analysis_service import (
     IntentAnalysisResult,
     IntentAnalysisService,
     create_intent_analysis_service,
+)
+from .proxy_pool_service import (
+    NoAvailableProxyError,
+    ProxyConfig,
+    ProxyPoolError,
+    ProxyPoolService,
+    ProxyQuality,
+    ProxyStatus,
+    ProxyType,
+    create_proxy_pool_service,
+)
+from .smart_scheduler_service import (
+    AccountAgeCategory,
+    AccountScheduleState,
+    ActionType,
+    RateLimitConfig,
+    ScheduledAction,
+    SmartSchedulerService,
+    create_smart_scheduler_service,
 )
 from .social_account_service import (
     FollowerTargetService,
@@ -37,33 +77,85 @@ from .social_scraper_service import (
     create_social_scraper_service,
     scrape_kol_followers,
 )
+from .timezone_scheduler_service import (
+    RegionSchedule,
+    ScheduledSlot,
+    TimezoneSchedulerService,
+    TimezoneWindow,
+    create_timezone_scheduler_service,
+)
 
 __all__ = [
+    # Smart Scheduler
+    "AccountAgeCategory",
+    "AccountScheduleState",
+    "ActionType",
+    # Anti-detect Browser
+    "AntiDetectBrowserError",
+    "AntiDetectBrowserService",
+    # Social Scraper
     "ApifyAPIError",
     "ApifyNotConfiguredError",
+    "BrowserNotConfiguredError",
+    "BrowserProfile",
+    "BrowserProvider",
+    "BrowserSession",
+    # Content Sync
+    "ContentSyncError",
+    "ContentSyncJob",
+    "ContentSyncService",
+    "ContentType",
+    # Crawler
     "CrawledComment",
     "CrawlerExecutionError",
     "CrawlerNotConfiguredError",
     "CrawlerServiceError",
     "DouyinCrawlerService",
+    # Social Account
     "FollowerTargetService",
     "HealthCheckResult",
     "ImportResult",
+    # Intent Analysis
     "IntentAnalysisError",
     "IntentAnalysisResult",
     "IntentAnalysisService",
+    # Proxy Pool
+    "NoAvailableProxyError",
     "OutreachTaskService",
+    "ProfileNotFoundError",
+    "ProxyConfig",
+    "ProxyPoolError",
+    "ProxyPoolService",
+    "ProxyQuality",
+    "ProxyStatus",
+    "ProxyType",
+    "RateLimitConfig",
+    # Timezone Scheduler
+    "RegionSchedule",
+    "ScheduledAction",
+    "ScheduledSlot",
+    "ScrapedContent",
     "ScrapedFollower",
+    "SessionStartError",
+    "SmartSchedulerService",
     "SocialScraperError",
     "SocialScraperService",
     "SubAccountService",
+    "SyncStatus",
     "TargetKOLService",
+    "TimezoneSchedulerService",
+    "TimezoneWindow",
+    "create_antidetect_browser_service",
+    "create_content_sync_service",
     "create_crawler_service",
     "create_follower_target_service",
     "create_intent_analysis_service",
     "create_outreach_task_service",
+    "create_proxy_pool_service",
+    "create_smart_scheduler_service",
     "create_social_scraper_service",
     "create_sub_account_service",
     "create_target_kol_service",
+    "create_timezone_scheduler_service",
     "scrape_kol_followers",
 ]
