@@ -11,7 +11,6 @@ identity:
   tags:
     - social
     - productivity
-    - productivity
 credentials_for_provider:
   apify_api_key:
     type: secret-input
