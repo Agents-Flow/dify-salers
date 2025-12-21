@@ -14,6 +14,15 @@ from .antidetect_browser_service import (
     SessionStartError,
     create_antidetect_browser_service,
 )
+from .automation_executor_service import (
+    ActionLog,
+    ActionResult,
+    AutomationExecutorService,
+    BatchExecutionResult,
+    ExecutionContext,
+    ExecutionStatus,
+    create_automation_executor_service,
+)
 from .content_sync_service import (
     ContentSyncError,
     ContentSyncJob,
@@ -23,6 +32,16 @@ from .content_sync_service import (
     SyncStatus,
     create_content_sync_service,
 )
+from .conversation_flow_service import (
+    ConversationFlow,
+    ConversationFlowService,
+    ConversationIntent,
+    ConversationState,
+    FlowNode,
+    FlowNodeType,
+    FlowResponse,
+    create_conversation_flow_service,
+)
 from .crawler_service import (
     CrawledComment,
     CrawlerExecutionError,
@@ -30,6 +49,14 @@ from .crawler_service import (
     CrawlerServiceError,
     DouyinCrawlerService,
     create_crawler_service,
+)
+from .follow_back_detector_service import (
+    BatchDetectionResult,
+    DetectionResult,
+    FollowBackDetectorService,
+    FollowRelationship,
+    FollowStatus,
+    create_follow_back_detector_service,
 )
 from .intent_analysis_service import (
     IntentAnalysisError,
@@ -76,6 +103,12 @@ from .social_scraper_service import (
     SocialScraperService,
     create_social_scraper_service,
     scrape_kol_followers,
+)
+from .spintax_service import (
+    GeneratedMessage,
+    MessageTemplate,
+    SpintaxService,
+    create_spintax_service,
 )
 from .timezone_scheduler_service import (
     RegionSchedule,
