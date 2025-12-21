@@ -1,0 +1,160 @@
+version: "0.5.0"
+kind: app
+app:
+  name: "互关检测自动化"
+  mode: workflow
+  icon: "🔄"
+  icon_background: "#E8F5E9"
+  description: "自动检测Instagram/X互关状态，对已回关用户自动发送DM，对超时未回关用户自动取关。"
+  use_icon_as_answer_icon: false
+
+workflow:
+  graph:
+    nodes:
+      - id: start
+        type: start
+        data:
+          type: start
+          title: 开始检测
+          variables:
+            - variable: kol_id
+              label: KOL ID
+              type: text-input
+              required: true
+            - variable: check_limit
+              label: 检测数量
+              type: number
+              required: false
+              default: 100
+            - variable: auto_dm
+              label: 自动发送DM
+              type: select
+              required: false
+              options:
+                - "true"
+                - "false"
+              default: "true"
+        position:
+          x: 100
+          y: 200
+
+      - id: generate_dm
+        type: tool
+        data:
+          type: tool
+          title: 生成DM消息
+          provider_id: social_outreach
+          provider_type: builtin
+          tool_name: generate_message
+          tool_parameters:
+            template_category:
+              type: constant
+              value: conversion
+            follower_name:
+              type: constant
+              value: "there"
+            kol_name:
+              type: constant
+              value: "our team"
+        position:
+          x: 350
+          y: 200
+
+      - id: create_dm_task
+        type: tool
+        data:
+          type: tool
+          title: 创建DM任务
+          provider_id: social_outreach
+          provider_type: builtin
+          tool_name: create_outreach_task
+          tool_parameters:
+            task_type:
+              type: constant
+              value: dm
+            target_kol_id:
+              type: variable
+              value:
+                - start
+                - kol_id
+            target_count:
+              type: variable
+              value:
+                - start
+                - check_limit
+        position:
+          x: 600
+          y: 200
+
+      - id: summary
+        type: llm
+        data:
+          type: llm
+          title: 生成报告
+          model:
+            provider: openai
+            name: gpt-4o-mini
+            mode: chat
+            completion_params:
+              temperature: 0.3
+          prompt_template:
+            - role: system
+              text: |
+                根据以下信息生成一份简洁的互关检测报告：
+                
+                DM任务创建结果：{{#create_dm_task.text#}}
+                
+                请用简洁的语言总结检测结果和后续操作。
+            - role: user
+              text: "请生成报告"
+        position:
+          x: 850
+          y: 200
+
+      - id: end
+        type: end
+        data:
+          type: end
+          title: 完成
+          outputs:
+            - variable: report
+              value_selector:
+                - summary
+                - text
+            - variable: task_info
+              value_selector:
+                - create_dm_task
+                - json
+        position:
+          x: 1100
+          y: 200
+
+    edges:
+      - source: start
+        target: generate_dm
+        sourceHandle: source
+        targetHandle: target
+      - source: generate_dm
+        target: create_dm_task
+        sourceHandle: source
+        targetHandle: target
+      - source: create_dm_task
+        target: summary
+        sourceHandle: source
+        targetHandle: target
+      - source: summary
+        target: end
+        sourceHandle: source
+        targetHandle: target
+
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ""
+    suggested_questions: []
+    sensitive_word_avoidance:
+      enabled: false
+    text_to_speech:
+      enabled: false
+    speech_to_text:
+      enabled: false

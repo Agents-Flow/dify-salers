@@ -1,0 +1,195 @@
+version: "0.5.0"
+kind: app
+app:
+  name: "批量DM自动化"
+  mode: workflow
+  icon: "📨"
+  icon_background: "#FFF8DC"
+  description: "批量发送个性化DM消息。支持Spintax模板、定时发送和智能频率控制。"
+  use_icon_as_answer_icon: false
+
+workflow:
+  graph:
+    nodes:
+      - id: start
+        type: start
+        data:
+          type: start
+          title: 配置任务
+          variables:
+            - variable: kol_id
+              label: 目标KOL ID
+              type: text-input
+              required: true
+            - variable: message_category
+              label: 消息类别
+              type: select
+              required: true
+              options:
+                - opening
+                - follow_up
+                - conversion
+              default: opening
+            - variable: target_count
+              label: 发送数量
+              type: number
+              required: false
+              default: 50
+              min: 1
+              max: 200
+            - variable: kol_name
+              label: KOL名称(用于消息)
+              type: text-input
+              required: false
+              default: "our team"
+            - variable: whatsapp_link
+              label: WhatsApp链接
+              type: text-input
+              required: false
+              default: ""
+        position:
+          x: 100
+          y: 200
+
+      - id: generate_template
+        type: tool
+        data:
+          type: tool
+          title: 生成消息模板
+          provider_id: social_outreach
+          provider_type: builtin
+          tool_name: generate_message
+          tool_parameters:
+            template_category:
+              type: variable
+              value:
+                - start
+                - message_category
+            follower_name:
+              type: constant
+              value: "[follower_name]"
+            kol_name:
+              type: variable
+              value:
+                - start
+                - kol_name
+            whatsapp_link:
+              type: variable
+              value:
+                - start
+                - whatsapp_link
+        position:
+          x: 350
+          y: 200
+
+      - id: preview
+        type: llm
+        data:
+          type: llm
+          title: 预览消息
+          model:
+            provider: openai
+            name: gpt-4o-mini
+            mode: chat
+            completion_params:
+              temperature: 0.3
+          prompt_template:
+            - role: system
+              text: |
+                请确认以下DM消息模板是否合适：
+                
+                消息内容：{{#generate_template.text#}}
+                
+                如果合适，回复"确认"。如果有问题，指出问题。
+            - role: user
+              text: "请检查消息模板"
+        position:
+          x: 600
+          y: 200
+
+      - id: create_task
+        type: tool
+        data:
+          type: tool
+          title: 创建批量任务
+          provider_id: social_outreach
+          provider_type: builtin
+          tool_name: create_outreach_task
+          tool_parameters:
+            task_type:
+              type: constant
+              value: dm
+            target_kol_id:
+              type: variable
+              value:
+                - start
+                - kol_id
+            target_count:
+              type: variable
+              value:
+                - start
+                - target_count
+            priority:
+              type: constant
+              value: normal
+        position:
+          x: 850
+          y: 200
+
+      - id: end
+        type: end
+        data:
+          type: end
+          title: 任务创建完成
+          outputs:
+            - variable: task_id
+              value_selector:
+                - create_task
+                - json
+                - task_id
+            - variable: message_preview
+              value_selector:
+                - generate_template
+                - text
+            - variable: target_count
+              value_selector:
+                - start
+                - target_count
+            - variable: status
+              value_selector:
+                - create_task
+                - json
+                - status
+        position:
+          x: 1100
+          y: 200
+
+    edges:
+      - source: start
+        target: generate_template
+        sourceHandle: source
+        targetHandle: target
+      - source: generate_template
+        target: preview
+        sourceHandle: source
+        targetHandle: target
+      - source: preview
+        target: create_task
+        sourceHandle: source
+        targetHandle: target
+      - source: create_task
+        target: end
+        sourceHandle: source
+        targetHandle: target
+
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ""
+    suggested_questions: []
+    sensitive_word_avoidance:
+      enabled: false
+    text_to_speech:
+      enabled: false
+    speech_to_text:
+      enabled: false

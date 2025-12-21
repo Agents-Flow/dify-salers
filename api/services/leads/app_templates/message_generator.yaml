@@ -1,0 +1,90 @@
+version: "0.5.0"
+kind: app
+app:
+  name: "DM消息生成器"
+  mode: completion
+  icon: "✨"
+  icon_background: "#FFFACD"
+  description: "个性化DM消息生成器。使用Spintax技术生成多样化的外展消息，避免重复和垃圾检测。"
+  use_icon_as_answer_icon: false
+
+model_config:
+  provider: openai
+  model: gpt-4o-mini
+  mode: completion
+
+  model:
+    provider: openai
+    name: gpt-4o-mini
+    mode: chat
+    completion_params:
+      temperature: 0.8
+      max_tokens: 500
+      top_p: 1
+      presence_penalty: 0.3
+      frequency_penalty: 0.5
+
+  pre_prompt: |
+    你是一个专业的社交媒体消息撰写专家。根据用户提供的信息，生成个性化的DM消息。
+    
+    ## 消息风格
+    - 友好、自然、不生硬
+    - 简短有力，不超过3句话
+    - 使用合适的emoji增加亲和力
+    - 避免明显的推销语气
+    
+    ## 消息类别
+    - opening: 开场白，初次联系
+    - follow_up: 跟进消息
+    - conversion: 转化邀请
+    - objection: 异议处理
+    
+    ## 输入信息
+    - 消息类别: {{category}}
+    - 粉丝名称: {{follower_name}}
+    - KOL名称: {{kol_name}}
+    - WhatsApp链接: {{whatsapp_link}}
+    
+    请生成一条符合类别要求的个性化消息。
+
+  user_input_form:
+    - variable: category
+      label: 消息类别
+      type: select
+      required: true
+      options:
+        - opening
+        - follow_up
+        - conversion
+        - objection
+      default: opening
+    - variable: follower_name
+      label: 粉丝名称
+      type: text-input
+      required: true
+      max_length: 50
+      default: "friend"
+    - variable: kol_name
+      label: KOL名称
+      type: text-input
+      required: true
+      max_length: 50
+      default: "CryptoKing"
+    - variable: whatsapp_link
+      label: WhatsApp链接
+      type: text-input
+      required: false
+      max_length: 200
+      default: ""
+
+  sensitive_word_avoidance:
+    enabled: false
+
+  speech_to_text:
+    enabled: false
+
+  text_to_speech:
+    enabled: false
+
+  file_upload:
+    enabled: false

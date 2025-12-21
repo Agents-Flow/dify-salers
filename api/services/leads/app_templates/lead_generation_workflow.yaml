@@ -1,0 +1,206 @@
+version: "0.5.0"
+kind: app
+app:
+  name: "KOL粉丝获客工作流"
+  mode: workflow
+  icon: "🎯"
+  icon_background: "#E6F7FF"
+  description: "自动化抓取KOL粉丝并创建外展任务的工作流。输入KOL用户名，自动抓取粉丝并批量创建关注/DM任务。"
+  use_icon_as_answer_icon: false
+
+workflow:
+  graph:
+    nodes:
+      - id: start
+        type: start
+        data:
+          type: start
+          title: 开始
+          variables:
+            - variable: platform
+              label: 平台
+              type: select
+              required: true
+              options:
+                - instagram
+                - x
+              default: instagram
+            - variable: kol_username
+              label: KOL用户名
+              type: text-input
+              required: true
+              max_length: 100
+            - variable: target_count
+              label: 目标数量
+              type: number
+              required: false
+              default: 50
+            - variable: task_type
+              label: 任务类型
+              type: select
+              required: true
+              options:
+                - follow
+                - dm
+                - follow_dm
+              default: follow_dm
+        position:
+          x: 100
+          y: 200
+
+      - id: scrape_followers
+        type: tool
+        data:
+          type: tool
+          title: 抓取KOL粉丝
+          provider_id: social_outreach
+          provider_type: builtin
+          tool_name: scrape_followers
+          tool_parameters:
+            platform:
+              type: variable
+              value:
+                - start
+                - platform
+            username:
+              type: variable
+              value:
+                - start
+                - kol_username
+            count:
+              type: variable
+              value:
+                - start
+                - target_count
+        position:
+          x: 350
+          y: 200
+
+      - id: check_results
+        type: if-else
+        data:
+          type: if-else
+          title: 检查结果
+          conditions:
+            - id: condition_1
+              logical_operator: and
+              conditions:
+                - variable_selector:
+                    - scrape_followers
+                    - text
+                  comparison_operator: is not empty
+        position:
+          x: 600
+          y: 200
+
+      - id: create_task
+        type: tool
+        data:
+          type: tool
+          title: 创建外展任务
+          provider_id: social_outreach
+          provider_type: builtin
+          tool_name: create_outreach_task
+          tool_parameters:
+            task_type:
+              type: variable
+              value:
+                - start
+                - task_type
+            target_kol_id:
+              type: variable
+              value:
+                - start
+                - kol_username
+            target_count:
+              type: variable
+              value:
+                - start
+                - target_count
+        position:
+          x: 850
+          y: 150
+
+      - id: error_message
+        type: answer
+        data:
+          type: answer
+          title: 错误提示
+          answer: "抓取粉丝失败，请检查用户名是否正确或稍后重试。"
+        position:
+          x: 850
+          y: 300
+
+      - id: success_end
+        type: end
+        data:
+          type: end
+          title: 成功完成
+          outputs:
+            - variable: task_id
+              value_selector:
+                - create_task
+                - json
+                - task_id
+            - variable: followers_scraped
+              value_selector:
+                - scrape_followers
+                - json
+                - total_scraped
+            - variable: message
+              value_selector:
+                - create_task
+                - text
+        position:
+          x: 1100
+          y: 150
+
+      - id: error_end
+        type: end
+        data:
+          type: end
+          title: 错误结束
+          outputs:
+            - variable: error
+              value: "抓取失败"
+        position:
+          x: 1100
+          y: 300
+
+    edges:
+      - source: start
+        target: scrape_followers
+        sourceHandle: source
+        targetHandle: target
+      - source: scrape_followers
+        target: check_results
+        sourceHandle: source
+        targetHandle: target
+      - source: check_results
+        target: create_task
+        sourceHandle: "true"
+        targetHandle: target
+      - source: check_results
+        target: error_message
+        sourceHandle: "false"
+        targetHandle: target
+      - source: create_task
+        target: success_end
+        sourceHandle: source
+        targetHandle: target
+      - source: error_message
+        target: error_end
+        sourceHandle: source
+        targetHandle: target
+
+  features:
+    file_upload:
+      enabled: false
+    opening_statement: ""
+    suggested_questions: []
+    sensitive_word_avoidance:
+      enabled: false
+    text_to_speech:
+      enabled: false
+    speech_to_text:
+      enabled: false
