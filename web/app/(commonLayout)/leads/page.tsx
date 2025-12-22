@@ -468,6 +468,10 @@ const LeadsPage: FC = () => {
       router.push('/leads/inbox')
       return
     }
+    if (tab === 'automation') {
+      router.push('/leads/automation')
+      return
+    }
     if (tab === 'dashboard') {
       router.push('/leads/dashboard')
       return
@@ -521,6 +525,7 @@ const LeadsPage: FC = () => {
     { value: 'tasks', text: t('leads.tabs.tasks') },
     { value: 'outreach', text: t('leads.tabs.outreach') },
     { value: 'inbox', text: t('leads.tabs.inbox') },
+    { value: 'automation', text: t('leads.tabs.automation') },
     { value: 'dashboard', text: t('leads.tabs.dashboard') },
   ]
 

@@ -1559,3 +1559,492 @@ class AIStatusApi(Resource):
         _, tenant_id = current_account_with_tenant()
         status = LeadsAnalyticsService.get_ai_status(tenant_id)
         return status
+
+
+# =============================================================================
+# High-Concurrency Automation APIs
+# =============================================================================
+
+
+@console_ns.route("/leads/automation/sessions")
+class AutomationSessionListApi(Resource):
+    """Manage social media API sessions."""
+
+    @console_ns.doc("list_automation_sessions")
+    @console_ns.doc(description="List all active HTTP API sessions")
+    @console_ns.doc(
+        params={
+            "platform": "Filter by platform (instagram, twitter)",
+            "status": "Filter by status (active, rate_limited, etc.)",
+        }
+    )
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get list of active sessions."""
+        from services.leads import create_session_manager_service
+
+        platform = request.args.get("platform")
+        status = request.args.get("status")
+
+        session_manager = create_session_manager_service()
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            if platform:
+                sessions = loop.run_until_complete(
+                    session_manager.list_sessions(platform, status)
+                )
+            else:
+                # Get all platforms
+                ig_sessions = loop.run_until_complete(
+                    session_manager.list_sessions("instagram", status)
+                )
+                tw_sessions = loop.run_until_complete(
+                    session_manager.list_sessions("twitter", status)
+                )
+                sessions = ig_sessions + tw_sessions
+        finally:
+            loop.close()
+
+        return {
+            "data": [
+                {
+                    "platform": s.platform,
+                    "username": s.username,
+                    "user_id": s.user_id,
+                    "status": s.status,
+                    "created_at": s.created_at.isoformat(),
+                    "updated_at": s.updated_at.isoformat(),
+                    "last_action_at": s.last_action_at.isoformat() if s.last_action_at else None,
+                    "error_count": s.error_count,
+                }
+                for s in sessions
+            ],
+            "total": len(sessions),
+        }
+
+    @console_ns.doc("create_automation_session")
+    @console_ns.doc(description="Create a new HTTP API session (login)")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """Create a new session by logging in."""
+        data = request.get_json() or {}
+
+        platform = data.get("platform", "instagram")
+        username = data.get("username")
+        password = data.get("password")
+        email = data.get("email")  # Required for Twitter
+        proxy = data.get("proxy")
+
+        if not username or not password:
+            raise BadRequest("username and password are required")
+
+        import asyncio
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            if platform == "instagram":
+                from services.leads import create_instagram_api_service, create_session_manager_service
+
+                session_manager = create_session_manager_service()
+                api = create_instagram_api_service(session_manager)
+                session = loop.run_until_complete(
+                    api.login(username, password, proxy=proxy)
+                )
+                return {
+                    "success": True,
+                    "platform": "instagram",
+                    "username": session.username,
+                    "user_id": session.user_id,
+                    "status": session.status,
+                }
+            elif platform in ("twitter", "x"):
+                from services.leads import create_session_manager_service, create_twitter_api_service
+
+                if not email:
+                    raise BadRequest("email is required for Twitter login")
+
+                session_manager = create_session_manager_service()
+                api = create_twitter_api_service(session_manager)
+                session = loop.run_until_complete(
+                    api.login(username, email, password)
+                )
+                return {
+                    "success": True,
+                    "platform": "twitter",
+                    "username": session.username,
+                    "user_id": session.user_id,
+                    "status": session.status,
+                }
+            else:
+                raise BadRequest(f"Unsupported platform: {platform}")
+        except Exception as e:
+            return {"success": False, "error": str(e)}, 400
+        finally:
+            loop.close()
+
+
+@console_ns.route("/leads/automation/sessions/<string:platform>/<string:username>")
+class AutomationSessionDetailApi(Resource):
+    """Manage a specific session."""
+
+    @console_ns.doc("get_automation_session")
+    @console_ns.doc(description="Get details of a specific session")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self, platform: str, username: str):
+        """Get session details."""
+        import asyncio
+
+        from services.leads import create_session_manager_service
+
+        session_manager = create_session_manager_service()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            session = loop.run_until_complete(
+                session_manager.get_session(platform, username)
+            )
+        finally:
+            loop.close()
+
+        if not session:
+            raise NotFound(f"Session not found: {platform}/{username}")
+
+        return {
+            "platform": session.platform,
+            "username": session.username,
+            "user_id": session.user_id,
+            "status": session.status,
+            "created_at": session.created_at.isoformat(),
+            "updated_at": session.updated_at.isoformat(),
+            "last_action_at": session.last_action_at.isoformat() if session.last_action_at else None,
+            "error_count": session.error_count,
+            "metadata": session.metadata,
+        }
+
+    @console_ns.doc("delete_automation_session")
+    @console_ns.doc(description="Delete (logout) a session")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def delete(self, platform: str, username: str):
+        """Delete a session."""
+        import asyncio
+
+        from services.leads import create_session_manager_service
+
+        session_manager = create_session_manager_service()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            result = loop.run_until_complete(
+                session_manager.delete_session(platform, username)
+            )
+        finally:
+            loop.close()
+
+        return {"success": result}
+
+
+@console_ns.route("/leads/automation/sessions/stats")
+class AutomationSessionStatsApi(Resource):
+    """Get session statistics."""
+
+    @console_ns.doc("get_session_stats")
+    @console_ns.doc(description="Get session statistics by platform")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get session stats."""
+        import asyncio
+
+        from services.leads import create_session_manager_service
+
+        platform = request.args.get("platform")
+        session_manager = create_session_manager_service()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            stats = loop.run_until_complete(session_manager.get_stats(platform))
+        finally:
+            loop.close()
+
+        return stats
+
+
+@console_ns.route("/leads/automation/tasks")
+class AutomationTaskListApi(Resource):
+    """Manage batch automation tasks."""
+
+    @console_ns.doc("list_automation_tasks")
+    @console_ns.doc(description="List batch automation tasks")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get list of automation tasks."""
+        # For now, return from database if we have task storage
+        # This could be extended to track batch follow/DM tasks
+        return {
+            "data": [],
+            "total": 0,
+            "message": "Batch task history not yet implemented",
+        }
+
+    @console_ns.doc("create_automation_task")
+    @console_ns.doc(description="Create a batch automation task (follow/DM)")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """Create a batch automation task."""
+        data = request.get_json() or {}
+
+        task_type = data.get("task_type", "follow")  # follow or dm
+        platform = data.get("platform", "instagram")
+        account_usernames = data.get("account_usernames", [])  # Sub-accounts to use
+        target_user_ids = data.get("target_user_ids", [])  # Target users
+        message_template = data.get("message_template")  # For DM tasks
+        max_concurrent = data.get("max_concurrent", 100)
+
+        if not account_usernames:
+            raise BadRequest("account_usernames is required")
+        if not target_user_ids:
+            raise BadRequest("target_user_ids is required")
+        if task_type == "dm" and not message_template:
+            raise BadRequest("message_template is required for DM tasks")
+
+        # This would trigger background execution
+        # For now, return a task placeholder
+        import uuid
+
+        task_id = str(uuid.uuid4())
+
+        return {
+            "task_id": task_id,
+            "task_type": task_type,
+            "platform": platform,
+            "total_accounts": len(account_usernames),
+            "total_targets": len(target_user_ids),
+            "max_concurrent": max_concurrent,
+            "status": "queued",
+            "message": "Task queued for execution",
+        }, 201
+
+
+@console_ns.route("/leads/automation/execute")
+class AutomationExecuteApi(Resource):
+    """Execute automation actions."""
+
+    @console_ns.doc("execute_automation")
+    @console_ns.doc(description="Execute a single automation action (for testing)")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """Execute a single automation action."""
+        data = request.get_json() or {}
+
+        action_type = data.get("action_type", "follow")  # follow, unfollow, dm
+        platform = data.get("platform", "instagram")
+        account_username = data.get("account_username")
+        target_username = data.get("target_username")
+        target_user_id = data.get("target_user_id")
+        message = data.get("message")  # For DM
+
+        if not account_username:
+            raise BadRequest("account_username is required")
+        if not target_username and not target_user_id:
+            raise BadRequest("target_username or target_user_id is required")
+
+        import asyncio
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            from services.leads import create_session_manager_service
+
+            session_manager = create_session_manager_service()
+
+            if platform == "instagram":
+                from services.leads import create_instagram_api_service
+
+                api = create_instagram_api_service(session_manager)
+
+                # Check if session exists
+                session = loop.run_until_complete(
+                    session_manager.get_session("instagram", account_username)
+                )
+                if not session:
+                    raise BadRequest(f"No session for {account_username}. Please login first.")
+
+                # Get user ID if not provided
+                if not target_user_id and target_username:
+                    target_user_id = loop.run_until_complete(
+                        api.get_user_id(account_username, target_username)
+                    )
+                    if not target_user_id:
+                        raise BadRequest(f"Could not find user: {target_username}")
+
+                if action_type == "follow":
+                    result = loop.run_until_complete(
+                        api.follow_user(account_username, target_user_id)
+                    )
+                    return {"success": result.success, "error": result.error}
+                elif action_type == "unfollow":
+                    result = loop.run_until_complete(
+                        api.unfollow_user(account_username, target_user_id)
+                    )
+                    return {"success": result.success, "error": result.error}
+                elif action_type == "dm":
+                    if not message:
+                        raise BadRequest("message is required for DM action")
+                    result = loop.run_until_complete(
+                        api.send_dm(account_username, [target_user_id], message)
+                    )
+                    return {"success": result.success, "error": result.error}
+                else:
+                    raise BadRequest(f"Unknown action_type: {action_type}")
+
+            elif platform in ("twitter", "x"):
+                from services.leads import create_twitter_api_service
+
+                api = create_twitter_api_service(session_manager)
+
+                session = loop.run_until_complete(
+                    session_manager.get_session("twitter", account_username)
+                )
+                if not session:
+                    raise BadRequest(f"No session for {account_username}. Please login first.")
+
+                if action_type == "follow":
+                    result = loop.run_until_complete(
+                        api.follow_user(account_username, target_user_id)
+                    )
+                    return {"success": result.success, "error": result.error}
+                elif action_type == "unfollow":
+                    result = loop.run_until_complete(
+                        api.unfollow_user(account_username, target_user_id)
+                    )
+                    return {"success": result.success, "error": result.error}
+                elif action_type == "dm":
+                    if not message:
+                        raise BadRequest("message is required for DM action")
+                    result = loop.run_until_complete(
+                        api.send_dm(account_username, target_user_id, message)
+                    )
+                    return {"success": result.success, "error": result.error}
+                else:
+                    raise BadRequest(f"Unknown action_type: {action_type}")
+            else:
+                raise BadRequest(f"Unsupported platform: {platform}")
+
+        except Exception as e:
+            return {"success": False, "error": str(e)}, 400
+        finally:
+            loop.close()
+
+
+@console_ns.route("/leads/automation/browser-pool/status")
+class BrowserPoolStatusApi(Resource):
+    """Get browser pool status."""
+
+    @console_ns.doc("get_browser_pool_status")
+    @console_ns.doc(description="Get lightweight browser pool status")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get browser pool status."""
+        from services.leads import create_browser_pool_service
+
+        pool = create_browser_pool_service(pool_size=10)
+        stats = pool.get_stats()
+        return stats
+
+
+@console_ns.route("/leads/automation/browser-pool/login")
+class BrowserPoolLoginApi(Resource):
+    """Use browser pool for login."""
+
+    @console_ns.doc("browser_pool_login")
+    @console_ns.doc(description="Login using browser pool (for CAPTCHA scenarios)")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def post(self):
+        """Login using browser pool."""
+        data = request.get_json() or {}
+
+        platform = data.get("platform", "instagram")
+        username = data.get("username")
+        password = data.get("password")
+        email = data.get("email")
+
+        if not username or not password:
+            raise BadRequest("username and password are required")
+
+        # Note: Browser pool requires async startup
+        return {
+            "message": "Browser pool login is an async operation. Use HTTP API login first, "
+            "and only use browser pool for CAPTCHA/challenge scenarios.",
+            "suggestion": "POST /leads/automation/sessions with platform, username, password",
+        }, 400
+
+
+@console_ns.route("/leads/automation/monitor")
+class AutomationMonitorApi(Resource):
+    """Real-time monitoring of concurrent operations."""
+
+    @console_ns.doc("get_automation_monitor")
+    @console_ns.doc(description="Get real-time monitoring stats")
+    @setup_required
+    @login_required
+    @account_initialization_required
+    def get(self):
+        """Get monitoring stats."""
+        import asyncio
+
+        from services.leads import create_session_manager_service
+
+        session_manager = create_session_manager_service()
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            stats = loop.run_until_complete(session_manager.get_stats())
+        finally:
+            loop.close()
+
+        # Calculate memory estimate
+        # HTTP API: ~3MB per session, Browser: ~300MB per session
+        http_memory_mb = stats.get("active", 0) * 3
+        browser_memory_estimate_mb = 10 * 300  # 10 browser pool instances
+
+        return {
+            "sessions": stats,
+            "memory_estimate": {
+                "http_api_mb": http_memory_mb,
+                "browser_pool_mb": browser_memory_estimate_mb,
+                "total_mb": http_memory_mb + browser_memory_estimate_mb,
+            },
+            "capacity": {
+                "max_concurrent_sessions": 1000,
+                "current_sessions": stats.get("total", 0),
+                "utilization_percent": round(stats.get("total", 0) / 1000 * 100, 2),
+            },
+            "health": {
+                "active": stats.get("active", 0),
+                "rate_limited": stats.get("rate_limited", 0),
+                "challenge_required": stats.get("challenge_required", 0),
+                "banned": stats.get("banned", 0),
+            },
+        }

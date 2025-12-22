@@ -815,3 +815,248 @@ export const getTaskStatusColor = (status: LeadTask['status']): 'gray' | 'blue' 
   }
   return colors[status]
 }
+
+// =============================================================================
+// High-Concurrency Automation Types
+// =============================================================================
+
+export type AutomationSessionStatus
+  = | 'active'
+  | 'rate_limited'
+  | 'challenge_required'
+  | 'banned'
+  | 'login_required'
+  | 'unknown'
+
+export type AutomationSession = {
+  platform: 'instagram' | 'twitter'
+  username: string
+  user_id: string | null
+  status: AutomationSessionStatus
+  created_at: string
+  updated_at: string
+  last_action_at: string | null
+  error_count: number
+  metadata?: Record<string, unknown>
+}
+
+export type AutomationSessionListResponse = {
+  data: AutomationSession[]
+  total: number
+}
+
+export type AutomationSessionStats = {
+  total: number
+  active: number
+  rate_limited: number
+  challenge_required: number
+  banned: number
+  by_platform: {
+    [key: string]: {
+      total: number
+      active: number
+      rate_limited: number
+      challenge_required: number
+      banned: number
+    }
+  }
+}
+
+export type CreateSessionRequest = {
+  platform: 'instagram' | 'twitter' | 'x'
+  username: string
+  password: string
+  email?: string
+  proxy?: string
+}
+
+export type CreateSessionResponse = {
+  success: boolean
+  platform: string
+  username: string
+  user_id?: string
+  status?: string
+  error?: string
+}
+
+export type AutomationTaskType = 'follow' | 'unfollow' | 'dm'
+
+export type AutomationTask = {
+  task_id: string
+  task_type: AutomationTaskType
+  platform: 'instagram' | 'twitter'
+  total_accounts: number
+  total_targets: number
+  max_concurrent: number
+  status: 'queued' | 'running' | 'completed' | 'failed'
+  progress?: {
+    completed: number
+    failed: number
+    rate_limited: number
+  }
+  created_at?: string
+}
+
+export type CreateAutomationTaskRequest = {
+  task_type: AutomationTaskType
+  platform: 'instagram' | 'twitter'
+  account_usernames: string[]
+  target_user_ids: string[]
+  message_template?: string
+  max_concurrent?: number
+}
+
+export type ExecuteAutomationRequest = {
+  action_type: AutomationTaskType
+  platform: 'instagram' | 'twitter' | 'x'
+  account_username: string
+  target_username?: string
+  target_user_id?: string
+  message?: string
+}
+
+export type ExecuteAutomationResponse = {
+  success: boolean
+  error?: string
+}
+
+export type BrowserPoolStatus = {
+  pool_size: number
+  total_instances: number
+  idle: number
+  busy: number
+  error: number
+  started: boolean
+  instances: Array<{
+    id: string
+    status: 'idle' | 'busy' | 'starting' | 'stopping' | 'error'
+    use_count: number
+    last_used: string | null
+  }>
+}
+
+export type AutomationMonitorStats = {
+  sessions: AutomationSessionStats
+  memory_estimate: {
+    http_api_mb: number
+    browser_pool_mb: number
+    total_mb: number
+  }
+  capacity: {
+    max_concurrent_sessions: number
+    current_sessions: number
+    utilization_percent: number
+  }
+  health: {
+    active: number
+    rate_limited: number
+    challenge_required: number
+    banned: number
+  }
+}
+
+// =============================================================================
+// High-Concurrency Automation Hooks
+// =============================================================================
+
+export const useAutomationSessions = (params: {
+  platform?: string
+  status?: string
+} = {}) => {
+  return useQuery<AutomationSessionListResponse>({
+    queryKey: [NAME_SPACE, 'automation-sessions', params],
+    queryFn: () => get('/leads/automation/sessions', { params }),
+  })
+}
+
+export const useAutomationSession = (platform: string, username: string, enabled = true) => {
+  return useQuery<AutomationSession>({
+    queryKey: [NAME_SPACE, 'automation-session', platform, username],
+    queryFn: () => get(`/leads/automation/sessions/${platform}/${username}`),
+    enabled: enabled && !!platform && !!username,
+  })
+}
+
+export const useAutomationSessionStats = (platform?: string) => {
+  return useQuery<AutomationSessionStats>({
+    queryKey: [NAME_SPACE, 'automation-session-stats', platform],
+    queryFn: () => get('/leads/automation/sessions/stats', { params: { platform } }),
+  })
+}
+
+export const useCreateAutomationSession = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateSessionRequest) =>
+      post<CreateSessionResponse>('/leads/automation/sessions', { body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'automation-sessions'] })
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'automation-session-stats'] })
+    },
+  })
+}
+
+export const useDeleteAutomationSession = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ platform, username }: { platform: string; username: string }) =>
+      del<{ success: boolean }>(`/leads/automation/sessions/${platform}/${username}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'automation-sessions'] })
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'automation-session-stats'] })
+    },
+  })
+}
+
+export const useAutomationTasks = () => {
+  return useQuery<{ data: AutomationTask[]; total: number }>({
+    queryKey: [NAME_SPACE, 'automation-tasks'],
+    queryFn: () => get('/leads/automation/tasks'),
+  })
+}
+
+export const useCreateAutomationTask = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (data: CreateAutomationTaskRequest) =>
+      post<AutomationTask>('/leads/automation/tasks', { body: data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [NAME_SPACE, 'automation-tasks'] })
+    },
+  })
+}
+
+export const useExecuteAutomation = () => {
+  return useMutation({
+    mutationFn: (data: ExecuteAutomationRequest) =>
+      post<ExecuteAutomationResponse>('/leads/automation/execute', { body: data }),
+  })
+}
+
+export const useBrowserPoolStatus = () => {
+  return useQuery<BrowserPoolStatus>({
+    queryKey: [NAME_SPACE, 'browser-pool-status'],
+    queryFn: () => get('/leads/automation/browser-pool/status'),
+  })
+}
+
+export const useAutomationMonitor = (options?: { refetchInterval?: number | false }) => {
+  return useQuery<AutomationMonitorStats>({
+    queryKey: [NAME_SPACE, 'automation-monitor'],
+    queryFn: () => get('/leads/automation/monitor'),
+    refetchInterval: options?.refetchInterval,
+  })
+}
+
+// Utility function for session status color
+export const getSessionStatusColor = (status: AutomationSessionStatus): string => {
+  const colors: Record<AutomationSessionStatus, string> = {
+    active: 'bg-util-colors-green-green-50 text-util-colors-green-green-600',
+    rate_limited: 'bg-util-colors-orange-orange-50 text-util-colors-orange-orange-600',
+    challenge_required: 'bg-util-colors-blue-blue-50 text-util-colors-blue-blue-600',
+    banned: 'bg-util-colors-red-red-50 text-util-colors-red-red-600',
+    login_required: 'bg-util-colors-gray-gray-50 text-util-colors-gray-gray-600',
+    unknown: 'bg-util-colors-gray-gray-50 text-util-colors-gray-gray-600',
+  }
+  return colors[status] || colors.unknown
+}

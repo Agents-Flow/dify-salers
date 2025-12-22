@@ -110,6 +110,9 @@ dependencies = [
     "tenacity>=9.1.2",
     "pillow>=12.0.0",
     "humps>=0.2.2",
+    # Social media HTTP API clients (browser-less, high concurrency)
+    # Note: instagrapi and twikit are optional dependencies
+    # Install manually if needed: pip install instagrapi twikit
 ]
 # Before adding new dependency, consider place it in
 # alphabet order (a-z) and suitable group.
