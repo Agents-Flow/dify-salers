@@ -704,7 +704,8 @@ def upgrade_db():
             # run db migration
             import flask_migrate
 
-            flask_migrate.upgrade()
+            # Use 'heads' to handle multiple migration branches
+            flask_migrate.upgrade(revision='heads')
 
             click.echo(click.style("Database migration successful!", fg="green"))
 
