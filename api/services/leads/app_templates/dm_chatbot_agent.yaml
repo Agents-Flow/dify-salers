@@ -1,0 +1,107 @@
+version: "0.5.0"
+kind: app
+app:
+  name: "AI私信助手"
+  mode: agent-chat
+  icon: "💬"
+  icon_background: "#F0FFF0"
+  description: "智能私信助手，自动分析用户意图并生成个性化回复。支持SOP对话流、异议处理和人工转接。"
+  use_icon_as_answer_icon: true
+
+model_config:
+  provider: openai
+  model: gpt-4o-mini
+  mode: chat
+  
+  model:
+    provider: openai
+    name: gpt-4o-mini
+    mode: chat
+    completion_params:
+      temperature: 0.7
+      max_tokens: 1000
+      top_p: 1
+      presence_penalty: 0
+      frequency_penalty: 0
+
+  pre_prompt: |
+    你是一个专业的社交媒体私信助手，负责帮助用户将KOL的公域粉丝转化为私域客户。
+    
+    ## 你的角色
+    - 友好、专业、有耐心
+    - 能够识别用户意图并给出合适的回复
+    - 善于处理异议和拒绝
+    - 适时推荐WhatsApp群组
+    
+    ## 对话策略
+    1. 开场白：友好问候，提及共同关注的KOL
+    2. 价值主张：介绍专属群组的价值
+    3. 异议处理：耐心解答疑虑
+    4. 转化邀请：适时发送WhatsApp链接
+    5. 跟进：对未回复的用户进行友好跟进
+    
+    ## 重要规则
+    - 如果用户明确表示不感兴趣，礼貌结束对话
+    - 如果用户连续3次表达不理解，建议转接人工
+    - 绝不发送垃圾信息或过度推销
+    - 保持自然、人性化的对话风格
+    
+    ## 可用工具
+    - analyze_intent: 分析用户消息意图
+    - generate_message: 生成个性化回复
+    - process_conversation: 处理对话流程
+
+  opening_statement: |
+    👋 你好！我是AI私信助手。
+    
+    我可以帮你：
+    - 📝 分析用户消息意图
+    - 💬 生成个性化的回复消息
+    - 🔄 自动处理对话流程
+    
+    请告诉我收到的用户消息，我会帮你分析并生成合适的回复！
+
+  suggested_questions:
+    - "帮我分析这条消息的意图：'Hi, sounds interesting!'"
+    - "生成一条友好的开场白给用户 John"
+    - "这个用户说'Why should I trust you?'，帮我处理这个异议"
+
+  agent_mode:
+    enabled: true
+    strategy: function_call
+    max_iteration: 5
+    tools:
+      - provider_id: social_outreach
+        provider_type: builtin
+        tool_name: analyze_intent
+        enabled: true
+      - provider_id: social_outreach
+        provider_type: builtin
+        tool_name: generate_message
+        enabled: true
+      - provider_id: social_outreach
+        provider_type: builtin
+        tool_name: process_conversation
+        enabled: true
+
+  sensitive_word_avoidance:
+    enabled: true
+    type: moderation
+    configs:
+      - type: keywords
+        keywords:
+          - "scam"
+          - "fraud"
+          - "illegal"
+
+  speech_to_text:
+    enabled: false
+
+  text_to_speech:
+    enabled: false
+
+  file_upload:
+    enabled: false
+
+  retriever_resource:
+    enabled: false

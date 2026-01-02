@@ -1,0 +1,254 @@
+version: "0.5.0"
+kind: app
+app:
+  name: "智能外展对话流"
+  mode: advanced-chat
+  icon: "🚀"
+  icon_background: "#FFF0F5"
+  description: "基于SOP的智能外展对话流。自动分析用户意图，按照预设流程进行对话，支持多轮交互和人工接入。"
+  use_icon_as_answer_icon: true
+
+workflow:
+  graph:
+    nodes:
+      - id: start
+        type: start
+        data:
+          type: start
+          title: 对话开始
+          variables:
+            - variable: conversation_id
+              label: 对话ID
+              type: text-input
+              required: false
+              default: ""
+            - variable: kol_name
+              label: KOL名称
+              type: text-input
+              required: false
+              default: "CryptoKing"
+            - variable: whatsapp_link
+              label: WhatsApp链接
+              type: text-input
+              required: false
+              default: "https://wa.me/..."
+        position:
+          x: 100
+          y: 200
+
+      - id: analyze
+        type: tool
+        data:
+          type: tool
+          title: 分析意图
+          provider_id: social_outreach
+          provider_type: builtin
+          tool_name: analyze_intent
+          tool_parameters:
+            message:
+              type: variable
+              value:
+                - sys
+                - query
+        position:
+          x: 350
+          y: 200
+
+      - id: intent_router
+        type: if-else
+        data:
+          type: if-else
+          title: 意图路由
+          conditions:
+            - id: is_negative
+              logical_operator: and
+              conditions:
+                - variable_selector:
+                    - analyze
+                    - json
+                    - is_negative
+                  comparison_operator: "=="
+                  value: "true"
+            - id: needs_human
+              logical_operator: and
+              conditions:
+                - variable_selector:
+                    - analyze
+                    - json
+                    - requires_human
+                  comparison_operator: "=="
+                  value: "true"
+        position:
+          x: 600
+          y: 200
+
+      - id: process_flow
+        type: tool
+        data:
+          type: tool
+          title: 处理对话流
+          provider_id: social_outreach
+          provider_type: builtin
+          tool_name: process_conversation
+          tool_parameters:
+            conversation_id:
+              type: variable
+              value:
+                - start
+                - conversation_id
+            incoming_message:
+              type: variable
+              value:
+                - sys
+                - query
+            follower_name:
+              type: constant
+              value: "there"
+            kol_name:
+              type: variable
+              value:
+                - start
+                - kol_name
+            whatsapp_link:
+              type: variable
+              value:
+                - start
+                - whatsapp_link
+        position:
+          x: 850
+          y: 100
+
+      - id: polite_end
+        type: llm
+        data:
+          type: llm
+          title: 礼貌结束
+          model:
+            provider: openai
+            name: gpt-4o-mini
+            mode: chat
+            completion_params:
+              temperature: 0.7
+          prompt_template:
+            - role: system
+              text: |
+                生成一条礼貌的结束语，感谢用户的时间。保持友好和专业。
+            - role: user
+              text: "用户说：{{#sys.query#}}"
+        position:
+          x: 850
+          y: 250
+
+      - id: human_handoff
+        type: llm
+        data:
+          type: llm
+          title: 人工转接
+          model:
+            provider: openai
+            name: gpt-4o-mini
+            mode: chat
+            completion_params:
+              temperature: 0.5
+          prompt_template:
+            - role: system
+              text: |
+                生成一条转接人工的消息。告诉用户将有真人来帮助他们。
+            - role: user
+              text: "用户说：{{#sys.query#}}"
+        position:
+          x: 850
+          y: 400
+
+      - id: response_answer
+        type: answer
+        data:
+          type: answer
+          title: 发送回复
+          answer: "{{#process_flow.text#}}"
+        position:
+          x: 1100
+          y: 100
+
+      - id: end_answer
+        type: answer
+        data:
+          type: answer
+          title: 结束回复
+          answer: "{{#polite_end.text#}}"
+        position:
+          x: 1100
+          y: 250
+
+      - id: handoff_answer
+        type: answer
+        data:
+          type: answer
+          title: 转接回复
+          answer: "{{#human_handoff.text#}}\n\n[系统提示：请转接人工客服]"
+        position:
+          x: 1100
+          y: 400
+
+    edges:
+      - source: start
+        target: analyze
+        sourceHandle: source
+        targetHandle: target
+      - source: analyze
+        target: intent_router
+        sourceHandle: source
+        targetHandle: target
+      - source: intent_router
+        target: polite_end
+        sourceHandle: is_negative
+        targetHandle: target
+      - source: intent_router
+        target: human_handoff
+        sourceHandle: needs_human
+        targetHandle: target
+      - source: intent_router
+        target: process_flow
+        sourceHandle: "else"
+        targetHandle: target
+      - source: process_flow
+        target: response_answer
+        sourceHandle: source
+        targetHandle: target
+      - source: polite_end
+        target: end_answer
+        sourceHandle: source
+        targetHandle: target
+      - source: human_handoff
+        target: handoff_answer
+        sourceHandle: source
+        targetHandle: target
+
+  features:
+    opening_statement: |
+      👋 欢迎使用智能外展对话流！
+      
+      我会自动分析用户的回复意图，并按照SOP流程生成合适的回复。
+      
+      请输入用户发来的消息，我来帮你处理。
+
+    suggested_questions:
+      - "Hi, sounds interesting!"
+      - "Why should I join your group?"
+      - "Is this a scam?"
+      - "Sure, send me the link!"
+
+    suggested_questions_after_answer:
+      enabled: true
+
+    speech_to_text:
+      enabled: false
+
+    text_to_speech:
+      enabled: false
+
+    file_upload:
+      enabled: false
+
+    sensitive_word_avoidance:
+      enabled: false
