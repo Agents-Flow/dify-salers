@@ -1,5 +1,5 @@
 'use client'
-import type { LangGeniusVersionResponse } from '@/models/common'
+import type { AgentFlowVersionResponse } from '@/models/common'
 import { RiCloseLine } from '@remixicon/react'
 import dayjs from 'dayjs'
 import Link from 'next/link'
@@ -12,16 +12,16 @@ import { IS_CE_EDITION } from '@/config'
 import { useGlobalPublicStore } from '@/context/global-public-context'
 
 type IAccountSettingProps = {
-  langGeniusVersionInfo: LangGeniusVersionResponse
+  agentFlowVersionInfo: AgentFlowVersionResponse
   onCancel: () => void
 }
 
 export default function AccountAbout({
-  langGeniusVersionInfo,
+  agentFlowVersionInfo,
   onCancel,
 }: IAccountSettingProps) {
   const { t } = useTranslation()
-  const isLatest = langGeniusVersionInfo.current_version === langGeniusVersionInfo.latest_version
+  const isLatest = agentFlowVersionInfo.current_version === agentFlowVersionInfo.latest_version
   const systemFeatures = useGlobalPublicStore(s => s.systemFeatures)
 
   return (
@@ -47,14 +47,14 @@ export default function AccountAbout({
 
           <div className="text-center text-xs font-normal text-text-tertiary">
             Version
-            {langGeniusVersionInfo?.current_version}
+            {agentFlowVersionInfo?.current_version}
           </div>
           <div className="flex flex-col items-center gap-2 text-center text-xs font-normal text-text-secondary">
             <div>
               ©
               {dayjs().year()}
               {' '}
-              LangGenius, Inc., Contributors.
+              Agent-Flow, Inc., Contributors.
             </div>
             <div className="text-text-accent">
               {
@@ -76,8 +76,8 @@ export default function AccountAbout({
           <div className="text-xs font-medium text-text-tertiary">
             {
               isLatest
-                ? t('about.latestAvailable', { ns: 'common', version: langGeniusVersionInfo.latest_version })
-                : t('about.nowAvailable', { ns: 'common', version: langGeniusVersionInfo.latest_version })
+                ? t('about.latestAvailable', { ns: 'common', version: agentFlowVersionInfo.latest_version })
+                : t('about.nowAvailable', { ns: 'common', version: agentFlowVersionInfo.latest_version })
             }
           </div>
           <div className="flex items-center">
@@ -94,7 +94,7 @@ export default function AccountAbout({
               !isLatest && !IS_CE_EDITION && (
                 <Button variant="primary" size="small">
                   <Link
-                    href={langGeniusVersionInfo.release_notes}
+                    href={agentFlowVersionInfo.release_notes}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

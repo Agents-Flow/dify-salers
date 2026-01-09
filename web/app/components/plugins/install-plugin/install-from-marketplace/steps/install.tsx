@@ -121,13 +121,13 @@ const Installed: FC<Props> = ({
     }
   }
 
-  const { langGeniusVersionInfo } = useAppContext()
+  const { agentFlowVersionInfo } = useAppContext()
   const { data: pluginDeclaration } = usePluginDeclarationFromMarketPlace(uniqueIdentifier)
   const isDifyVersionCompatible = useMemo(() => {
-    if (!pluginDeclaration || !langGeniusVersionInfo.current_version)
+    if (!pluginDeclaration || !agentFlowVersionInfo.current_version)
       return true
-    return gte(langGeniusVersionInfo.current_version, pluginDeclaration?.manifest.meta.minimum_dify_version ?? '0.0.0')
-  }, [langGeniusVersionInfo.current_version, pluginDeclaration])
+    return gte(agentFlowVersionInfo.current_version, pluginDeclaration?.manifest.meta.minimum_dify_version ?? '0.0.0')
+  }, [agentFlowVersionInfo.current_version, pluginDeclaration])
 
   const { canInstall } = useInstallPluginLimit({ ...payload, from: 'marketplace' })
   return (

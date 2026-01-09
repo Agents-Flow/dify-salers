@@ -2,7 +2,7 @@ import type { Mock } from 'vitest'
 import type { UsagePlanInfo } from '@/app/components/billing/type'
 import type { AppContextValue } from '@/context/app-context'
 import type { ProviderContextState } from '@/context/provider-context'
-import type { ICurrentWorkspace, LangGeniusVersionResponse, UserProfileResponse } from '@/models/common'
+import type { AgentFlowVersionResponse, ICurrentWorkspace, UserProfileResponse } from '@/models/common'
 import { render, screen } from '@testing-library/react'
 import { Plan } from '@/app/components/billing/type'
 import { mailToSupport } from '@/app/components/header/utils/util'
@@ -76,7 +76,7 @@ const buildAppContext = (overrides: Partial<AppContextValue> = {}): AppContextVa
     role: 'normal',
     providers: [],
   }
-  const langGeniusVersionInfo: LangGeniusVersionResponse = {
+  const agentFlowVersionInfo: AgentFlowVersionResponse = {
     current_env: '',
     current_version: '1.0.0',
     latest_version: '',
@@ -94,7 +94,7 @@ const buildAppContext = (overrides: Partial<AppContextValue> = {}): AppContextVa
     isCurrentWorkspaceDatasetOperator: false,
     mutateUserProfile: vi.fn(),
     mutateCurrentWorkspace: vi.fn(),
-    langGeniusVersionInfo,
+    agentFlowVersionInfo,
     isLoadingCurrentWorkspace: false,
   }
   const useSelector: AppContextValue['useSelector'] = selector => selector({ ...base, useSelector })

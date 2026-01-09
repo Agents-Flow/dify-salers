@@ -14,7 +14,7 @@ import type {
   FileUploadConfigResponse,
   ICurrentWorkspace,
   IWorkspace,
-  LangGeniusVersionResponse,
+  AgentFlowVersionResponse,
   Member,
   PluginProvider,
   StructuredOutputRulesRequestBody,
@@ -56,7 +56,7 @@ export const commonQueryKeys = {
   ] as const,
   notionBinding: (code?: string | null) => [NAME_SPACE, 'notion-binding', code] as const,
   modelParameterRules: (provider?: string, model?: string) => [NAME_SPACE, 'model-parameter-rules', provider, model] as const,
-  langGeniusVersion: (currentVersion?: string | null) => [NAME_SPACE, 'langgenius-version', currentVersion] as const,
+  agentFlowVersion: (currentVersion?: string | null) => [NAME_SPACE, 'agentflow-version', currentVersion] as const,
   forgotPasswordValidity: (token?: string | null) => [NAME_SPACE, 'forgot-password-validity', token] as const,
   dataSourceIntegrates: [NAME_SPACE, 'data-source-integrates'] as const,
 }
@@ -97,10 +97,10 @@ export const useUserProfile = () => {
   })
 }
 
-export const useLangGeniusVersion = (currentVersion?: string | null, enabled?: boolean) => {
-  return useQuery<LangGeniusVersionResponse>({
-    queryKey: commonQueryKeys.langGeniusVersion(currentVersion || undefined),
-    queryFn: () => get<LangGeniusVersionResponse>('/version', { params: { current_version: currentVersion } }),
+export const useAgentFlowVersion = (currentVersion?: string | null, enabled?: boolean) => {
+  return useQuery<AgentFlowVersionResponse>({
+    queryKey: commonQueryKeys.agentFlowVersion(currentVersion || undefined),
+    queryFn: () => get<AgentFlowVersionResponse>('/version', { params: { current_version: currentVersion } }),
     enabled: !!currentVersion && (enabled ?? true),
   })
 }

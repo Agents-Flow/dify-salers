@@ -36,7 +36,7 @@ vi.mock('@/context/app-context', () => ({
 
 vi.mock('@/service/common', () => ({
   fetchCurrentWorkspace: vi.fn(),
-  fetchLangGeniusVersion: vi.fn(),
+  fetchAgentFlowVersion: vi.fn(),
   fetchUserProfile: vi.fn(),
   getSystemFeatures: vi.fn(),
 }))

@@ -56,12 +56,12 @@ vi.mock('@/app/components/plugins/install-plugin/hooks/use-refresh-plugin-list',
 }))
 
 // Mock app context
-const mockLangGeniusVersionInfo = vi.fn(() => ({
+const mockAgentFlowVersionInfo = vi.fn(() => ({
   current_version: '1.0.0',
 }))
 vi.mock('@/context/app-context', () => ({
   useAppContext: () => ({
-    langGeniusVersionInfo: mockLangGeniusVersionInfo(),
+    agentFlowVersionInfo: mockAgentFlowVersionInfo(),
   }),
 }))
 
@@ -177,7 +177,7 @@ describe('PluginItem', () => {
     mockTheme.mockReturnValue('light')
     mockCurrentPluginID.mockReturnValue(undefined)
     mockEnableMarketplace.mockReturnValue(true)
-    mockLangGeniusVersionInfo.mockReturnValue({ current_version: '1.0.0' })
+    mockAgentFlowVersionInfo.mockReturnValue({ current_version: '1.0.0' })
     mockGetValueFromI18nObject.mockImplementation((obj: Record<string, string>) => obj?.en_US || '')
   })
 
@@ -368,7 +368,7 @@ describe('PluginItem', () => {
   describe('Version Compatibility', () => {
     it('should show warning icon when Dify version is not compatible', () => {
       // Arrange
-      mockLangGeniusVersionInfo.mockReturnValue({ current_version: '0.3.0' })
+      mockAgentFlowVersionInfo.mockReturnValue({ current_version: '0.3.0' })
       const plugin = createPluginDetail({
         declaration: createPluginDeclaration({
           meta: { version: '1.0.0', minimum_dify_version: '0.5.0' },
@@ -385,7 +385,7 @@ describe('PluginItem', () => {
 
     it('should not show warning when Dify version is compatible', () => {
       // Arrange
-      mockLangGeniusVersionInfo.mockReturnValue({ current_version: '1.0.0' })
+      mockAgentFlowVersionInfo.mockReturnValue({ current_version: '1.0.0' })
       const plugin = createPluginDetail({
         declaration: createPluginDeclaration({
           meta: { version: '1.0.0', minimum_dify_version: '0.5.0' },
@@ -402,7 +402,7 @@ describe('PluginItem', () => {
 
     it('should handle missing current_version gracefully', () => {
       // Arrange
-      mockLangGeniusVersionInfo.mockReturnValue({ current_version: '' })
+      mockAgentFlowVersionInfo.mockReturnValue({ current_version: '' })
       const plugin = createPluginDetail()
 
       // Act

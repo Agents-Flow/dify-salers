@@ -1,7 +1,7 @@
 'use client'
 
 import type { FC, ReactNode } from 'react'
-import type { ICurrentWorkspace, LangGeniusVersionResponse, UserProfileResponse } from '@/models/common'
+import type { AgentFlowVersionResponse, ICurrentWorkspace, UserProfileResponse } from '@/models/common'
 import { useQueryClient } from '@tanstack/react-query'
 import { noop } from 'es-toolkit/function'
 import { useCallback, useEffect, useMemo } from 'react'
@@ -12,7 +12,7 @@ import MaintenanceNotice from '@/app/components/header/maintenance-notice'
 import { ZENDESK_FIELD_IDS } from '@/config'
 import {
   useCurrentWorkspace,
-  useLangGeniusVersion,
+  useAgentFlowVersion,
   useUserProfile,
 } from '@/service/use-common'
 import { useGlobalPublicStore } from './global-public-context'
@@ -26,7 +26,7 @@ export type AppContextValue = {
   isCurrentWorkspaceEditor: boolean
   isCurrentWorkspaceDatasetOperator: boolean
   mutateCurrentWorkspace: VoidFunction
-  langGeniusVersionInfo: LangGeniusVersionResponse
+  agentFlowVersionInfo: AgentFlowVersionResponse
   useSelector: typeof useSelector
   isLoadingCurrentWorkspace: boolean
 }
@@ -40,7 +40,7 @@ const userProfilePlaceholder = {
   is_password_set: false,
 }
 
-const initialLangGeniusVersionInfo = {
+const initialAgentFlowVersionInfo = {
   current_env: '',
   current_version: '',
   latest_version: '',
@@ -69,7 +69,7 @@ const AppContext = createContext<AppContextValue>({
   isCurrentWorkspaceDatasetOperator: false,
   mutateUserProfile: noop,
   mutateCurrentWorkspace: noop,
-  langGeniusVersionInfo: initialLangGeniusVersionInfo,
+  agentFlowVersionInfo: initialAgentFlowVersionInfo,
   useSelector,
   isLoadingCurrentWorkspace: false,
 })
@@ -87,27 +87,27 @@ export const AppContextProvider: FC<AppContextProviderProps> = ({ children }) =>
   const systemFeatures = useGlobalPublicStore(s => s.systemFeatures)
   const { data: userProfileResp } = useUserProfile()
   const { data: currentWorkspaceResp, isPending: isLoadingCurrentWorkspace } = useCurrentWorkspace()
-  const langGeniusVersionQuery = useLangGeniusVersion(
+  const agentFlowVersionQuery = useAgentFlowVersion(
     userProfileResp?.meta.currentVersion,
     !systemFeatures.branding.enabled,
   )
 
   const userProfile = useMemo<UserProfileResponse>(() => userProfileResp?.profile || userProfilePlaceholder, [userProfileResp?.profile])
   const currentWorkspace = useMemo<ICurrentWorkspace>(() => currentWorkspaceResp || initialWorkspaceInfo, [currentWorkspaceResp])
-  const langGeniusVersionInfo = useMemo<LangGeniusVersionResponse>(() => {
-    if (!userProfileResp?.meta?.currentVersion || !langGeniusVersionQuery.data)
-      return initialLangGeniusVersionInfo
+  const agentFlowVersionInfo = useMemo<AgentFlowVersionResponse>(() => {
+    if (!userProfileResp?.meta?.currentVersion || !agentFlowVersionQuery.data)
+      return initialAgentFlowVersionInfo
 
     const current_version = userProfileResp.meta.currentVersion
     const current_env = userProfileResp.meta.currentEnv || ''
-    const versionData = langGeniusVersionQuery.data
+    const versionData = agentFlowVersionQuery.data
     return {
       ...versionData,
       current_version,
       latest_version: versionData.version,
       current_env,
     }
-  }, [langGeniusVersionQuery.data, userProfileResp?.meta])
+  }, [agentFlowVersionQuery.data, userProfileResp?.meta])
 
   const isCurrentWorkspaceManager = useMemo(() => ['owner', 'admin'].includes(currentWorkspace.role), [currentWorkspace.role])
   const isCurrentWorkspaceOwner = useMemo(() => currentWorkspace.role === 'owner', [currentWorkspace.role])
@@ -124,22 +124,22 @@ export const AppContextProvider: FC<AppContextProviderProps> = ({ children }) =>
 
   // #region Zendesk conversation fields
   useEffect(() => {
-    if (ZENDESK_FIELD_IDS.ENVIRONMENT && langGeniusVersionInfo?.current_env) {
+    if (ZENDESK_FIELD_IDS.ENVIRONMENT && agentFlowVersionInfo?.current_env) {
       setZendeskConversationFields([{
         id: ZENDESK_FIELD_IDS.ENVIRONMENT,
-        value: langGeniusVersionInfo.current_env.toLowerCase(),
+        value: agentFlowVersionInfo.current_env.toLowerCase(),
       }])
     }
-  }, [langGeniusVersionInfo?.current_env])
+  }, [agentFlowVersionInfo?.current_env])
 
   useEffect(() => {
-    if (ZENDESK_FIELD_IDS.VERSION && langGeniusVersionInfo?.version) {
+    if (ZENDESK_FIELD_IDS.VERSION && agentFlowVersionInfo?.version) {
       setZendeskConversationFields([{
         id: ZENDESK_FIELD_IDS.VERSION,
-        value: langGeniusVersionInfo.version,
+        value: agentFlowVersionInfo.version,
       }])
     }
-  }, [langGeniusVersionInfo?.version])
+  }, [agentFlowVersionInfo?.version])
 
   useEffect(() => {
     if (ZENDESK_FIELD_IDS.EMAIL && userProfile?.email) {
@@ -186,7 +186,7 @@ export const AppContextProvider: FC<AppContextProviderProps> = ({ children }) =>
     <AppContext.Provider value={{
       userProfile,
       mutateUserProfile,
-      langGeniusVersionInfo,
+      agentFlowVersionInfo,
       useSelector,
       currentWorkspace,
       isCurrentWorkspaceManager,

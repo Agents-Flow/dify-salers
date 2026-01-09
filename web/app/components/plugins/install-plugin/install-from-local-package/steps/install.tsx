@@ -107,12 +107,12 @@ const Installed: FC<Props> = ({
     }
   }
 
-  const { langGeniusVersionInfo } = useAppContext()
+  const { agentFlowVersionInfo } = useAppContext()
   const isDifyVersionCompatible = useMemo(() => {
-    if (!langGeniusVersionInfo.current_version)
+    if (!agentFlowVersionInfo.current_version)
       return true
-    return gte(langGeniusVersionInfo.current_version, payload.meta.minimum_dify_version ?? '0.0.0')
-  }, [langGeniusVersionInfo.current_version, payload.meta.minimum_dify_version])
+    return gte(agentFlowVersionInfo.current_version, payload.meta.minimum_dify_version ?? '0.0.0')
+  }, [agentFlowVersionInfo.current_version, payload.meta.minimum_dify_version])
 
   return (
     <>

@@ -21,7 +21,7 @@ const AppsFull: FC<{ loc: string, className?: string }> = ({
 }) => {
   const { t } = useTranslation()
   const { plan } = useProviderContext()
-  const { userProfile, langGeniusVersionInfo } = useAppContext()
+  const { userProfile, agentFlowVersionInfo } = useAppContext()
   const isTeam = plan.type === Plan.team
   const usage = plan.usage.buildApps
   const total = plan.total.buildApps
@@ -63,7 +63,7 @@ const AppsFull: FC<{ loc: string, className?: string }> = ({
         )}
         {plan.type !== Plan.sandbox && plan.type !== Plan.professional && (
           <Button variant="secondary-accent">
-            <a target="_blank" rel="noopener noreferrer" href={mailToSupport(userProfile.email, plan.type, langGeniusVersionInfo.current_version)}>
+            <a target="_blank" rel="noopener noreferrer" href={mailToSupport(userProfile.email, plan.type, agentFlowVersionInfo.current_version)}>
               {t('apps.contactUs', { ns: 'billing' })}
             </a>
           </Button>

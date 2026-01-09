@@ -22,7 +22,7 @@ import type {
   InitValidateStatusResponse,
   InvitationResponse,
   IWorkspace,
-  LangGeniusVersionResponse,
+  AgentFlowVersionResponse,
   Member,
   ModerateResponse,
   OauthResponse,
@@ -79,8 +79,8 @@ export const updateUserProfile = ({ url, body }: { url: string, body: Record<str
   return post<CommonResponse>(url, { body })
 }
 
-export const fetchLangGeniusVersion = ({ url, params }: { url: string, params: Record<string, any> }): Promise<LangGeniusVersionResponse> => {
-  return get<LangGeniusVersionResponse>(url, { params })
+export const fetchAgentFlowVersion = ({ url, params }: { url: string, params: Record<string, any> }): Promise<AgentFlowVersionResponse> => {
+  return get<AgentFlowVersionResponse>(url, { params })
 }
 
 export const oauth = ({ url, params }: { url: string, params: Record<string, any> }): Promise<OauthResponse> => {

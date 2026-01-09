@@ -24,7 +24,7 @@ const mockThemeBuilder = {
   },
 }
 const mockUseAppContext = vi.fn(() => ({
-  langGeniusVersionInfo: {
+  agentFlowVersionInfo: {
     current_env: 'PRODUCTION',
     current_version: '',
     latest_version: '',

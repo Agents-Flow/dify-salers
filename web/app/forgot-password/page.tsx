@@ -25,7 +25,7 @@ const ForgotPassword = () => {
             {' '}
             {new Date().getFullYear()}
             {' '}
-            LangGenius, Inc. All rights reserved.
+            Agent-Flow, Inc. All rights reserved.
           </div>
         )}
       </div>

@@ -22,7 +22,7 @@ export default function Support({ closeAccountDropdown }: SupportProps) {
 `
   const { t } = useTranslation()
   const { plan } = useProviderContext()
-  const { userProfile, langGeniusVersionInfo } = useAppContext()
+  const { userProfile, agentFlowVersionInfo } = useAppContext()
   const hasDedicatedChannel = plan.type !== Plan.sandbox
 
   return (
@@ -73,7 +73,7 @@ export default function Support({ closeAccountDropdown }: SupportProps) {
                         : (
                             <a
                               className={cn(itemClassName, 'group justify-between', 'data-[active]:bg-state-base-hover')}
-                              href={mailToSupport(userProfile.email, plan.type, langGeniusVersionInfo?.current_version)}
+                              href={mailToSupport(userProfile.email, plan.type, agentFlowVersionInfo?.current_version)}
                               target="_blank"
                               rel="noopener noreferrer"
                             >
