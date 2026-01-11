@@ -21,6 +21,7 @@ import dataset from '../i18n/en-US/dataset.json'
 import education from '../i18n/en-US/education.json'
 import explore from '../i18n/en-US/explore.json'
 import layout from '../i18n/en-US/layout.json'
+import leads from '../i18n/en-US/leads.json'
 import login from '../i18n/en-US/login.json'
 import oauth from '../i18n/en-US/oauth.json'
 import pipeline from '../i18n/en-US/pipeline.json'
@@ -54,6 +55,7 @@ export const resources = {
   education,
   explore,
   layout,
+  leads,
   login,
   oauth,
   pipeline,
