@@ -11,7 +11,7 @@ import {
   RiTaskLine,
   RiUserSearchLine,
 } from '@remixicon/react'
-import classNames from '@/utils/classnames'
+import { cn } from '@/utils/classnames'
 
 type NavItem = {
   key: string
@@ -91,7 +91,7 @@ const LeadsNav: FC = () => {
         <button
           key={item.key}
           onClick={() => handleNavigate(item)}
-          className={classNames(
+          className={cn(
             'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
             isActive(item)
               ? 'bg-state-accent-active text-text-accent'
