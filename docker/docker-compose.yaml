@@ -701,6 +701,9 @@ services:
 
   # API service
   api:
+    build:
+      context: ../api
+      dockerfile: Dockerfile
     image: langgenius/dify-api:1.11.2
     restart: always
     environment:
@@ -743,6 +746,9 @@ services:
   # worker service
   # The Celery worker for processing all queues (dataset, workflow, mail, etc.)
   worker:
+    build:
+      context: ../api
+      dockerfile: Dockerfile
     image: langgenius/dify-api:1.11.2
     restart: always
     environment:
@@ -782,6 +788,9 @@ services:
   # worker_beat service
   # Celery beat for scheduling periodic tasks.
   worker_beat:
+    build:
+      context: ../api
+      dockerfile: Dockerfile
     image: langgenius/dify-api:1.11.2
     restart: always
     environment:
@@ -812,6 +821,9 @@ services:
 
   # Frontend web application.
   web:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
     image: langgenius/dify-web:1.11.2
     restart: always
     environment:
