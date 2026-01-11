@@ -263,6 +263,7 @@
   "menus.datasetsTips": "即将到来：上传自己的长文本数据，或通过 Webhook 集成自己的数据源",
   "menus.explore": "探索",
   "menus.exploreMarketplace": "探索 Marketplace",
+  "menus.leads": "线索",
   "menus.newApp": "创建应用",
   "menus.newDataset": "创建知识库",
   "menus.plugins": "插件",

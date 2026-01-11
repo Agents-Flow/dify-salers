@@ -263,6 +263,7 @@
   "menus.datasetsTips": "COMING SOON: Import your own text data or write data in real-time via Webhook for LLM context enhancement.",
   "menus.explore": "Explore",
   "menus.exploreMarketplace": "Explore Marketplace",
+  "menus.leads": "Leads",
   "menus.newApp": "New App",
   "menus.newDataset": "Create Knowledge",
   "menus.plugins": "Plugins",
